@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { getColor } from './palette';
 import type { ArrowKind, BeadLayer, BeadProject, ClipboardPattern, CopyMode, MirrorDirection, MoveMode, RemoveMode, ShapeFillMode, ShapeKind, TextDirection, ToolId } from './types';
 

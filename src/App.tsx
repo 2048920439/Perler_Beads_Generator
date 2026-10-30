@@ -1,4 +1,5 @@
-﻿import WorkspaceCanvas from './WorkspaceCanvas';
+import * as React from 'react';
+import WorkspaceCanvas from './WorkspaceCanvas';
 import ThreePreview from './ThreePreview';
 import { downloadPrintPdf, downloadPrintPng, downloadProjectJson, downloadUsageWorkbook } from './exporters';
 import type { PrintExportOptions } from './exporters';

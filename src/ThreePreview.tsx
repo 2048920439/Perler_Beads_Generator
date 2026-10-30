@@ -1,3 +1,4 @@
+import * as React from 'react';
 import * as THREE from 'three';
 import { getColor } from './palette';
 import type { BeadProject } from './types';

@@ -31,6 +31,8 @@ pnpm-debug.log*
 coverage/
 playwright-report/
 test-results/
+.next/
+.pnpm-store/
 
 # OS and editor files
 .DS_Store
