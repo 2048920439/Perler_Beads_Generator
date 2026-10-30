@@ -2,6 +2,7 @@ import { paletteVersion } from './palette';
 import type { BeadLayer, BeadProject } from './types';
 
 export const autosaveKey = 'perler-beads-generator:draft';
+const maxProjectDimension = 180;
 
 export function createProject(width = 52, height = 52, name = 'Untitled Pattern'): BeadProject {
   const now = new Date().toISOString();
@@ -137,9 +138,46 @@ export function normalizeProject(project: BeadProject): BeadProject {
   };
 }
 
+export function parseProjectJson(raw: string): BeadProject {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('This file is not valid JSON.');
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('This file does not contain a valid bead project.');
+  }
+
+  const candidate = parsed as Partial<BeadProject>;
+  const width = Number(candidate.width);
+  const height = Number(candidate.height);
+  const hasCells = Array.isArray(candidate.cells);
+  const hasLayers = Array.isArray(candidate.layers) && candidate.layers.length > 0;
+  if (
+    !Number.isInteger(width) ||
+    width < 1 ||
+    width > maxProjectDimension ||
+    !Number.isInteger(height) ||
+    height < 1 ||
+    height > maxProjectDimension ||
+    (!hasCells && !hasLayers)
+  ) {
+    throw new Error('This file does not contain a valid bead project.');
+  }
+
+  return normalizeProject({ ...candidate, width, height } as BeadProject);
+}
+
 function normalizeLayers(project: BeadProject, width: number, height: number): BeadLayer[] {
   const legacyCells = normalizeCells(project.cells, width, height);
-  const sourceLayers = project.layers?.length ? project.layers : createProject(width, height).layers;
+  const sourceLayers = project.layers?.length
+    ? project.layers
+    : createProject(width, height).layers.map((layer, index) => ({
+        ...layer,
+        cells: index === 0 ? legacyCells : [],
+      }));
   return sourceLayers.map((layer, index) => ({
     ...layer,
     customName: Boolean(layer.customName),
@@ -165,9 +203,7 @@ export function loadDraft(): BeadProject | null {
   try {
     const raw = localStorage.getItem(autosaveKey);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as BeadProject;
-    if (!parsed.width || !parsed.height || !Array.isArray(parsed.cells)) return null;
-    return normalizeProject(parsed);
+    return parseProjectJson(raw);
   } catch {
     localStorage.removeItem(autosaveKey);
     return null;

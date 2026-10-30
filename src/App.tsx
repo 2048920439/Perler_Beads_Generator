@@ -5,7 +5,7 @@ import { downloadPrintPdf, downloadPrintPng, downloadProjectJson, downloadUsageW
 import type { PrintExportOptions } from './exporters';
 import { imageFileToBeads } from './imageToBeads';
 import { basicPalette, colorDistance, completePalette, getColor, nearestPaletteColor } from './palette';
-import { composeVisibleCells, createLayer, createProject, loadDraft, normalizeProject, saveDraft, withCells, withLayers } from './project';
+import { composeVisibleCells, createLayer, createProject, loadDraft, normalizeProject, parseProjectJson, saveDraft, withCells, withLayers } from './project';
 import { findIsolatedBeads, summarizeUsage } from './usage';
 import type { ArrowKind, BackgroundMode, BeadProject, ClipboardPattern, CopyMode, GenerationStyle, MirrorDirection, MoveMode, RemoveMode, RightClickAction, ShapeFillMode, ShapeKind, TextDirection, ToolId } from './types';
 
@@ -1118,13 +1118,15 @@ export default function App() {
 
   async function importJson(file: File) {
     let imported: BeadProject;
+    let raw: string;
     try {
-      const text = await file.text();
-      imported = JSON.parse(text) as BeadProject;
+      raw = await file.text();
     } catch {
       throw new Error(text.unreadableRecord);
     }
-    if (!imported.width || !imported.height || !Array.isArray(imported.cells)) {
+    try {
+      imported = parseProjectJson(raw);
+    } catch {
       throw new Error(text.invalidRecord);
     }
     soloVisibilitySnapshotRef.current = null;
@@ -1548,6 +1550,9 @@ export default function App() {
         </div>
 
         <div className="topbar-right">
+          <a className="viewer-nav-link" href="/viewer" title={language === 'zh' ? '打开只读图纸查看器' : 'Open read-only pattern viewer'}>
+            {language === 'zh' ? '只读查看' : 'Viewer'}
+          </a>
           <a
             className="github-link"
             href="https://github.com/Jett-Wu/Perler_Beads_Generator"
