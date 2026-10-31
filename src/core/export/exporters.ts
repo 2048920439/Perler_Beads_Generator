@@ -1,5 +1,5 @@
-import { getColor, mappedCode } from './palette';
-import type { BeadLayer, BeadProject, UsageRow } from './types';
+import { getColor, mappedCode } from '@/core/palette';
+import type { BeadLayer, BeadProject, UsageRow } from '@/common/types';
 
 export type PrintExportOptions = {
   format?: 'png' | 'pdf';

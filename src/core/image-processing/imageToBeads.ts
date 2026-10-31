@@ -1,5 +1,5 @@
-import { colorDistance, nearestPaletteColor, palette } from './palette';
-import type { ConvertOptions, ConvertResult, GenerationStyle, PaletteColor } from './types';
+import { colorDistance, nearestPaletteColor, palette } from '@/core/palette';
+import type { ConvertOptions, ConvertResult, GenerationStyle, PaletteColor } from '@/common/types';
 
 type StyleProfile = {
   sampleSide: number;

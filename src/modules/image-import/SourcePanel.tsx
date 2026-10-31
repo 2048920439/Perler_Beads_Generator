@@ -1,7 +1,7 @@
 import * as React from 'react';
-import ThreePreview from '../../ThreePreview';
-import type { BeadProject, BackgroundMode, GenerationStyle } from '../../types';
-import type { EditorText, Language } from '../editor/localization';
+import ThreePreview from '@/presentation/preview/ThreePreview';
+import type { BeadProject, BackgroundMode, GenerationStyle } from '@/common/types';
+import type { EditorText, Language } from '@/config/localization';
 
 type Props = {
   text: EditorText;

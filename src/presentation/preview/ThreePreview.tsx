@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as THREE from 'three';
-import { getColor } from './palette';
-import type { BeadProject } from './types';
+import { getColor } from '@/core/palette';
+import type { BeadProject } from '@/common/types';
 
 const { useEffect, useMemo, useRef, useState } = React;
 const BEAD_RADIUS = 0.31;

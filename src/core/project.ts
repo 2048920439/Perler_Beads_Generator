@@ -1,5 +1,5 @@
-import { paletteVersion } from './palette';
-import type { BeadLayer, BeadProject } from './types';
+import { paletteVersion } from '@/core/palette';
+import type { BeadLayer, BeadProject } from '@/common/types';
 
 export const autosaveKey = 'perler-beads-generator:draft';
 const maxProjectDimension = 180;

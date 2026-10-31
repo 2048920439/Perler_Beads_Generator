@@ -1,4 +1,4 @@
-import type { BrandId, PaletteColor } from './types';
+import type { BrandId, PaletteColor } from '@/common/types';
 
 const rawColorsCsv = `
 A1,#FAF4C8

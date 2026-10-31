@@ -1,6 +1,6 @@
-import type { EditorText } from '../editor/localization';
+import type { EditorText } from '@/config/localization';
 import type { AdjustmentSettings, LayerEffect } from './colorOperations';
-import type { BeadLayer } from '../../types';
+import type { BeadLayer } from '@/common/types';
 import { hasAdjustments } from './colorOperations';
 
 type Props = {

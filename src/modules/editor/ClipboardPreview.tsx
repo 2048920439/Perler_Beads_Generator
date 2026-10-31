@@ -1,5 +1,5 @@
-import { getColor } from '../../palette';
-import type { ClipboardPattern } from '../../types';
+import { getColor } from '@/core/palette';
+import type { ClipboardPattern } from '@/common/types';
 
 export function ClipboardPreview({ pattern }: { pattern: ClipboardPattern }) {
   const maxSide = Math.max(pattern.width, pattern.height, 1);

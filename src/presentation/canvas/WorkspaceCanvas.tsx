@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { getColor } from './palette';
-import type { ArrowKind, BeadLayer, BeadProject, ClipboardPattern, CopyMode, MirrorDirection, MoveMode, RemoveMode, ShapeFillMode, ShapeKind, TextDirection, ToolId } from './types';
+import { getColor } from '@/core/palette';
+import type { ArrowKind, BeadLayer, BeadProject, ClipboardPattern, CopyMode, MirrorDirection, MoveMode, RemoveMode, ShapeFillMode, ShapeKind, TextDirection, ToolId } from '@/common/types';
 
 const { useEffect, useMemo, useRef, useState } = React;
 

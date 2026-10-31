@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { DragEvent } from 'react';
-import type { BeadLayer } from '../../types';
-import type { EditorText } from '../editor/localization';
-import { DragHandleIcon, DuplicateIcon, EyeIcon, LockIcon, PencilIcon, TrashIcon } from '../../shared/ui/EditorIcons';
+import type { BeadLayer } from '@/common/types';
+import type { EditorText } from '@/config/localization';
+import { DragHandleIcon, DuplicateIcon, EyeIcon, LockIcon, PencilIcon, TrashIcon } from '@/common/ui/EditorIcons';
 
 type DragTarget = { id: string; edge: 'before' | 'after' };
 

@@ -1,4 +1,4 @@
-import type { BackgroundMode, GenerationStyle, ToolId } from '../../types';
+import type { BackgroundMode, GenerationStyle, ToolId } from '@/common/types';
 
 export const tools: Array<{ id: ToolId; shortcut: string }> = [
   { id: 'pencil', shortcut: 'B' },

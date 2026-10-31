@@ -1,5 +1,5 @@
-import { getColor } from './palette';
-import type { BeadProject, UsageRow } from './types';
+import { getColor } from '@/core/palette';
+import type { BeadProject, UsageRow } from '@/common/types';
 
 export function summarizeUsage(project: BeadProject): UsageRow[] {
   const usageLayers = (project.layers ?? []).filter((layer) => layer.includeInUsage);

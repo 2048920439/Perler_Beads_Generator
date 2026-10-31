@@ -1,4 +1,4 @@
-import type { ArrowKind, ShapeKind, ToolId } from '../../types';
+import type { ArrowKind, ShapeKind, ToolId } from '@/common/types';
 
 export function PlusIcon() {
   return (
