@@ -103,8 +103,8 @@ export class ImageImportService extends BaseService {
     if (requestId !== this.generationRequestId) return null;
     // A conversion must not overwrite a project edited or replaced while awaiting the image.
     if (this.projectService.snapshot.project !== source) return null;
-    const nextWidth = Math.max(source.width, result.width);
-    const nextHeight = Math.max(source.height, result.height);
+    const nextWidth = result.width;
+    const nextHeight = result.height;
     const referenceBlob = await createAlignedReferenceBlob(file, result.width, result.height, nextWidth, nextHeight, corners);
     if (requestId !== this.generationRequestId || this.projectService.snapshot.project !== source) return null;
 
