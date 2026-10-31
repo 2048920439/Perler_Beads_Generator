@@ -3,7 +3,7 @@ import WorkspaceCanvas from './WorkspaceCanvas';
 import ThreePreview from './ThreePreview';
 import { downloadPrintPdf, downloadPrintPng, downloadProjectJson, downloadUsageWorkbook } from './exporters';
 import type { PrintExportOptions } from './exporters';
-import { imageFileToBeads } from './imageToBeads';
+import { createAlignedReferenceBlob, imageFileToBeads } from './imageToBeads';
 import { ImageGridEditor, type GridCorners } from './ImageGridEditor';
 import { basicPalette, colorDistance, completePalette, getColor, nearestPaletteColor } from './palette';
 import { composeVisibleCells, createLayer, createProject, loadDraft, normalizeProject, parseProjectJson, saveDraft, withCells, withLayers } from './project';
@@ -1020,12 +1020,6 @@ export default function App() {
       if (current) URL.revokeObjectURL(current);
       return URL.createObjectURL(file);
     });
-    setReferenceFile(file);
-    setReferenceImageUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return URL.createObjectURL(file);
-    });
-    resetReferenceTransform();
     setShowImageGridEditor(true);
     setNotice(language === 'zh' ? `正在生成 ${file.name}...` : `Generating ${file.name}...`);
   }
@@ -1053,13 +1047,14 @@ export default function App() {
     }
     const requestId = generationRequestRef.current + 1;
     generationRequestRef.current = requestId;
+    const sourceFile = pendingFile;
     const targetLayerId = activeLayer.id;
     const sourceProject = project;
     const sourceLayers = layers;
     setIsGenerating(true);
     setNotice(language === 'zh' ? '正在本地更新拼豆图案...' : 'Updating bead pattern locally...');
     try {
-      const result = await imageFileToBeads(pendingFile, {
+      const result = await imageFileToBeads(sourceFile, {
         width,
         height,
         gridCorners: corners,
@@ -1072,9 +1067,18 @@ export default function App() {
         speckleReduction: defaultImportSettings.speckleReduction,
       });
       if (requestId !== generationRequestRef.current) return;
-      commitHistory();
       const nextWidth = Math.max(sourceProject.width, result.width);
       const nextHeight = Math.max(sourceProject.height, result.height);
+      const referenceBlob = await createAlignedReferenceBlob(
+        sourceFile,
+        result.width,
+        result.height,
+        nextWidth,
+        nextHeight,
+        corners,
+      );
+      if (requestId !== generationRequestRef.current) return;
+      commitHistory();
       const nextLayers = sourceLayers.map((layer) => {
         if (layer.id === targetLayerId) {
           return {
@@ -1096,6 +1100,10 @@ export default function App() {
         cells: composeVisibleCells(nextLayers, nextWidth, nextHeight),
       };
       updateProject(nextProject);
+      setReferenceFile(sourceFile);
+      setReferenceImageUrl(URL.createObjectURL(referenceBlob));
+      setReferenceVisible(true);
+      resetReferenceTransform();
       setNotice(
         language === 'zh'
           ? `${result.colorsUsed} 色 - ${result.totalBeads} 颗 - 可编辑图案已生成。`

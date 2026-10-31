@@ -70,6 +70,43 @@ export async function imageFileToBeads(file: File, options: ConvertOptions): Pro
   return { width, height, cells: reducedCells, colorsUsed, totalBeads };
 }
 
+export async function createAlignedReferenceBlob(
+  file: File,
+  width: number,
+  height: number,
+  projectWidth: number,
+  projectHeight: number,
+  corners: NonNullable<ConvertOptions['gridCorners']>,
+): Promise<Blob> {
+  const image = await loadImage(file);
+  const resolution = 8;
+  const canvas = document.createElement('canvas');
+  canvas.width = projectWidth * resolution;
+  canvas.height = projectHeight * resolution;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is not available.');
+  const left = Math.min(...corners.map((point) => point.x)) * image.naturalWidth;
+  const right = Math.max(...corners.map((point) => point.x)) * image.naturalWidth;
+  const top = Math.min(...corners.map((point) => point.y)) * image.naturalHeight;
+  const bottom = Math.max(...corners.map((point) => point.y)) * image.naturalHeight;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(
+    image,
+    left,
+    top,
+    right - left,
+    bottom - top,
+    0,
+    0,
+    width * resolution,
+    height * resolution,
+  );
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('Could not create the aligned reference image.');
+  return blob;
+}
+
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
