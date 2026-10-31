@@ -714,7 +714,7 @@ export default function WorkspaceCanvas({
     const gridDx = Math.abs(toGridX - fromGridX);
     const gridDy = Math.abs(toGridY - fromGridY);
     const steps = Math.max(dx, dy, Math.ceil(Math.max(gridDx, gridDy) * 2), 1);
-    let next = draftCellsRef.current.slice();
+    const next = draftCellsRef.current.slice();
     const value = pointerRef.current.erasing || tool === 'eraser' ? null : selectedColorId;
     for (let step = 0; step <= steps; step += 1) {
       const x = Math.round(fromX + ((toX - fromX) * step) / steps);

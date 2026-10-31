@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import PatternViewerCanvas from './PatternViewerCanvas';
 import { getColor } from './palette';
 import { parseProjectJson } from './project';
@@ -310,12 +311,12 @@ export default function PatternViewer() {
       <div className="pattern-viewer-mobile-header-stack">
         <header className="pattern-viewer-header">
           <div className="pattern-viewer-brand">
-            <a className="pattern-viewer-logo" href="/" aria-label={text.editor} title={text.editor}>
+            <Link className="pattern-viewer-logo" href="/" aria-label={text.editor} title={text.editor}>
               <span />
               <span />
               <span />
               <span />
-            </a>
+            </Link>
             <div>
               <strong>{text.title}</strong>
               <span>{text.subtitle}</span>
@@ -334,7 +335,7 @@ export default function PatternViewer() {
             >
               <span aria-hidden="true">{mobilePanelOpen ? '×' : '☰'}</span>
             </button>
-            <a className="pattern-viewer-nav-link" href="/">{text.editor}</a>
+            <Link className="pattern-viewer-nav-link" href="/">{text.editor}</Link>
             <button
               type="button"
               className="pattern-viewer-language"

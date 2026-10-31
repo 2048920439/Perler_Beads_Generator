@@ -4,10 +4,13 @@
   "description": "A powerful Perler bead pattern editor for turning images into printable bead charts with MARD color matching, layers, 3D preview, and usage exports.",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "next dev",
+    "lint": "eslint app src",
+    "typecheck": "tsc --noEmit",
     "build": "next build",
-    "start": "next start"
+    "preview": "node scripts/preview-export.cjs"
   },
   "dependencies": {
     "@types/three": "^0.184.1",
@@ -18,9 +21,10 @@
     "typescript": "^5.4.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "^20.17.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/node": "^20.17.6",
     "eslint": "^9.20.0",
     "eslint-config-next": "^15.5.6"
   }

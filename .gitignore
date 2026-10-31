@@ -2,9 +2,16 @@
 node_modules/
 
 # Generated artifacts
-dist/
-generated/*
+/dist/
+/build/
+/out/
+/generated/**
 !generated/.gitkeep
+/.next/
+/.output/
+/.vercel/
+/.turbo/
+/storybook-static/
 
 # Local npm configuration and caches
 .npmrc
@@ -31,7 +38,6 @@ pnpm-debug.log*
 coverage/
 playwright-report/
 test-results/
-.next/
 .pnpm-store/
 
 # OS and editor files

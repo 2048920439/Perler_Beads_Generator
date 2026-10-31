@@ -41,26 +41,28 @@ Live demo: https://jett-wu.github.io/Perler_Beads_Generator/
 ## 本地运行
 
 ```bash
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 默认预览地址：
 
 ```text
-http://127.0.0.1:5174/
+http://localhost:3000/
 ```
 
 ## 构建
 
 ```bash
-npm run build
+pnpm lint
+pnpm typecheck
+pnpm build
 ```
 
 构建产物会输出到：
 
 ```text
-generated/dist/
+out/
 ```
 
 ## GitHub Pages 部署
@@ -188,26 +190,33 @@ A powerful Perler bead pattern editor for turning images into printable bead cha
 ## Local Development
 
 ```bash
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Default preview URL:
+Next.js prints the local preview URL when the server starts (normally `http://localhost:3000`).
 
-```text
-http://127.0.0.1:5174/
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code conventions, verification commands, and pull request guidance. AI-assisted changes should also follow [AGENTS.md](AGENTS.md) and the reusable prompts in [docs/AI_PROMPTS.md](docs/AI_PROMPTS.md).
+
+To preview the exported static site locally:
+
+```bash
+pnpm build
+pnpm preview
 ```
 
 ## Build
 
 ```bash
-npm run build
+pnpm lint
+pnpm typecheck
+pnpm build
 ```
 
-Build output:
+Lint and typecheck are also run on pull requests. Build output and deployment details are managed by the Next.js GitHub Actions workflow:
 
 ```text
-generated/dist/
+out/
 ```
 
 ## GitHub Pages Deployment
@@ -241,10 +250,10 @@ docs/
   blank-workspace.png     # Blank workspace preview
 
 scripts/
-  clean-dist.cjs          # Cleans generated/dist
-  post-build.cjs          # Copies styles/vendor files and fixes built imports
-  write-html.cjs          # Writes the static HTML used by GitHub Pages
-  dev-server.cjs          # Local static preview server
+  clean-dist.cjs          # Legacy helper; not used by the Next.js build
+  post-build.cjs          # Legacy helper; not used by the Next.js build
+  write-html.cjs          # Legacy helper; not used by the Next.js build
+  dev-server.cjs          # Legacy helper; not used by Next.js development
 
 src/
   App.tsx                 # App state, layout, panels, and main interactions
@@ -260,9 +269,9 @@ src/
   main.tsx                # React entry
 
 generated/
-  .gitkeep                # Keeps the folder; build output and local caches are ignored
+  .gitkeep                # Placeholder for the legacy build output directory
 
-index.html                # Development HTML entry
+index.html                # Legacy static entry; Next.js starts from app/
 package.json              # Scripts and dependencies
 tsconfig.json             # TypeScript config
 tsconfig.build.json       # Build output config

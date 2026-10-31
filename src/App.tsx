@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Link from 'next/link';
 import WorkspaceCanvas from './WorkspaceCanvas';
 import ThreePreview from './ThreePreview';
 import { downloadPrintPdf, downloadPrintPng, downloadProjectJson, downloadUsageWorkbook } from './exporters';
@@ -16,7 +17,7 @@ type Language = 'zh' | 'en';
 
 const languageKey = 'perler-beads-generator:language';
 
-const ui: Record<Language, any> = {
+const ui = {
     zh: {
         appName: '拼豆图纸生成器',
         board: '拼豆板',
@@ -1637,9 +1638,9 @@ export default function App() {
         </div>
 
         <div className="topbar-right">
-          <a className="viewer-nav-link" href="/viewer" title={language === 'zh' ? '打开只读图纸查看器' : 'Open read-only pattern viewer'}>
+          <Link className="viewer-nav-link" href="/viewer" title={language === 'zh' ? '打开只读图纸查看器' : 'Open read-only pattern viewer'}>
             {language === 'zh' ? '只读查看' : 'Viewer'}
-          </a>
+          </Link>
           <a
             className="github-link"
             href="https://github.com/Jett-Wu/Perler_Beads_Generator"

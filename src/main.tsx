@@ -1,3 +1,4 @@
+import * as React from 'react';
 import App from './App';
 
 type AppErrorBoundaryState = { error: Error | null };
