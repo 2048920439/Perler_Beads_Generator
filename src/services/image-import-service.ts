@@ -103,26 +103,24 @@ export class ImageImportService extends BaseService {
     if (requestId !== this.generationRequestId) return null;
     // A conversion must not overwrite a project edited or replaced while awaiting the image.
     if (this.projectService.snapshot.project !== source) return null;
-    const nextWidth = result.width;
-    const nextHeight = result.height;
-    const referenceBlob = await createAlignedReferenceBlob(file, result.width, result.height, nextWidth, nextHeight, corners);
+    const referenceBlob = await createAlignedReferenceBlob(file, result.width, result.height, result.width, result.height, corners);
     if (requestId !== this.generationRequestId || this.projectService.snapshot.project !== source) return null;
 
     const layers = source.layers.map((layer) => ({
       ...layer,
       cells:
         layer.id === targetLayerId
-          ? resizeCells(result.cells, result.width, result.height, nextWidth, nextHeight)
-          : resizeCells(layer.cells, source.width, source.height, nextWidth, nextHeight),
+          ? resizeCells(result.cells, result.width, result.height, result.width, result.height)
+          : resizeCells(layer.cells, source.width, source.height, result.width, result.height),
     }));
     this.projectService.commitHistory();
     this.projectService.replace({
       ...source,
-      width: nextWidth,
-      height: nextHeight,
+      width: result.width,
+      height: result.height,
       activeLayerId: targetLayerId,
       layers,
-      cells: composeVisibleCells(layers, nextWidth, nextHeight),
+      cells: composeVisibleCells(layers, result.width, result.height),
     });
     return { ...result, referenceBlob };
   }

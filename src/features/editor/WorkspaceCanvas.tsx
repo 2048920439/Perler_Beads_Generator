@@ -13,7 +13,7 @@ import { ProjectService } from '@/services/project-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
 
-const { useEffect, useMemo, useRef, useState } = React;
+const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
 type HoverCell = {
   x: number;
@@ -57,7 +57,6 @@ export default function WorkspaceCanvas() {
   const images = useService(ImageImportService);
   const view = useService(WorkspaceViewService);
   useObservableState(localization.snapshot$);
-  const text = localization.text;
   const { project: sourceProject } = useObservableState(projectService.snapshot$);
   const project = useMemo(() => getDisplayProject(sourceProject), [sourceProject]);
   const { selectedColorId } = useObservableState(palette.snapshot$);
@@ -73,10 +72,7 @@ export default function WorkspaceCanvas() {
   const { isGenerating } = useObservableState(images.snapshot$);
   const referenceImageVisible = visible && !isGenerating;
   const referenceImageAdjusting = adjusting && referenceImageVisible;
-  const referenceAdjustHint = text.referenceAdjustHint;
-  const fitLabel = text.fit;
   const canEdit = !projectService.activeLayer.locked;
-  const lockedHint = text.lockedCanvasHint;
   const toolService = useService(ToolService);
   const toolState = useObservableState(toolService.snapshot$);
   const {
@@ -156,6 +152,39 @@ export default function WorkspaceCanvas() {
     [referenceImage, referenceImageVisible, referenceImageOpacity, referenceImageScale, referenceImageOffset, referenceImagePlacement],
   );
 
+  const fitToWindow = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const availableWidth = wrapper.clientWidth - 88;
+    const availableHeight = wrapper.clientHeight - 88;
+    const patternWidth = project.width * cellSize;
+    const patternHeight = project.height * cellSize;
+    const nextZoom = Math.min(2.4, Math.max(0.12, Math.min(availableWidth / patternWidth, availableHeight / patternHeight)));
+    setZoom(nextZoom);
+    setPan({
+      x: (wrapper.clientWidth - patternWidth * nextZoom) / 2,
+      y: (wrapper.clientHeight - patternHeight * nextZoom) / 2,
+    });
+  }, [project.width, project.height, cellSize]);
+
+  const constrainPan = useCallback((nextPan: { x: number; y: number }, nextZoom: number): { x: number; y: number } => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return nextPan;
+    const boardWidth = project.width * cellSize * nextZoom;
+    const boardHeight = project.height * cellSize * nextZoom;
+    const clampAxis = (value: number, viewportSize: number, contentSize: number) => {
+      const visibleGuard = Math.max(32, Math.min(120, viewportSize * 0.36, contentSize * 0.55));
+      const min = visibleGuard - contentSize;
+      const max = viewportSize - visibleGuard;
+      if (min > max) return (viewportSize - contentSize) / 2;
+      return Math.min(max, Math.max(min, value));
+    };
+    return {
+      x: clampAxis(nextPan.x, wrapper.clientWidth, boardWidth),
+      y: clampAxis(nextPan.y, wrapper.clientHeight, boardHeight),
+    };
+  }, [project.width, project.height, cellSize]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'Space') setIsSpaceDown(true);
@@ -191,10 +220,8 @@ export default function WorkspaceCanvas() {
   }, [referenceImageUrl]);
 
   useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
     fitToWindow();
-  }, [project.width, project.height, cellSize]);
+  }, [fitToWindow]);
 
   useEffect(() => {
     draftCellsRef.current = getActiveLayerCells(project);
@@ -234,7 +261,7 @@ export default function WorkspaceCanvas() {
     });
     if (wrapperRef.current) observer.observe(wrapperRef.current);
     return () => observer.disconnect();
-  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing]);
+  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, constrainPan]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     const point = canvasToGridPoint(event.clientX, event.clientY);
@@ -589,21 +616,6 @@ export default function WorkspaceCanvas() {
     }, nextZoom));
   }
 
-  function fitToWindow() {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-    const availableWidth = wrapper.clientWidth - 88;
-    const availableHeight = wrapper.clientHeight - 88;
-    const patternWidth = project.width * cellSize;
-    const patternHeight = project.height * cellSize;
-    const nextZoom = Math.min(2.4, Math.max(0.12, Math.min(availableWidth / patternWidth, availableHeight / patternHeight)));
-    setZoom(nextZoom);
-    setPan({
-      x: (wrapper.clientWidth - patternWidth * nextZoom) / 2,
-      y: (wrapper.clientHeight - patternHeight * nextZoom) / 2,
-    });
-  }
-
   function stepZoom(multiplier: number) {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -615,24 +627,6 @@ export default function WorkspaceCanvas() {
       x: point.x - before.x * nextZoom,
       y: point.y - before.y * nextZoom,
     }, nextZoom));
-  }
-
-  function constrainPan(nextPan: { x: number; y: number }, nextZoom: number): { x: number; y: number } {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return nextPan;
-    const boardWidth = project.width * cellSize * nextZoom;
-    const boardHeight = project.height * cellSize * nextZoom;
-    const clampAxis = (value: number, viewportSize: number, contentSize: number) => {
-      const visibleGuard = Math.max(32, Math.min(120, viewportSize * 0.36, contentSize * 0.55));
-      const min = visibleGuard - contentSize;
-      const max = viewportSize - visibleGuard;
-      if (min > max) return (viewportSize - contentSize) / 2;
-      return Math.min(max, Math.max(min, value));
-    };
-    return {
-      x: clampAxis(nextPan.x, wrapper.clientWidth, boardWidth),
-      y: clampAxis(nextPan.y, wrapper.clientHeight, boardHeight),
-    };
   }
 
   function almostSamePoint(a: { x: number; y: number }, b: { x: number; y: number }) {
@@ -769,15 +763,15 @@ export default function WorkspaceCanvas() {
       <div className="board-chip">
         {project.width} * {project.height}
       </div>
-      {!canEdit && <div className="canvas-lock-hint">{lockedHint}</div>}
+      {!canEdit && <div className="canvas-lock-hint">{localization.text.lockedCanvasHint}</div>}
       {referenceImageAdjusting && referenceImageVisible && (
-        <div className="reference-adjust-hint">{referenceAdjustHint}</div>
+        <div className="reference-adjust-hint">{localization.text.referenceAdjustHint}</div>
       )}
       <div className="zoom-controls" aria-label="Canvas zoom controls">
         <button onClick={() => stepZoom(0.9)}>-</button>
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => stepZoom(1.1)}>+</button>
-        <button onClick={fitToWindow}>{fitLabel}</button>
+        <button onClick={fitToWindow}>{localization.text.fit}</button>
       </div>
     </div>
   );

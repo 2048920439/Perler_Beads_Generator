@@ -20,18 +20,12 @@ export function EditorTopBar() {
   const localization = useService(LocalizationService);
   const notice = useService(NoticeService);
   const language = useObservableState(localization.snapshot$);
-  const text = localization.text;
   const { project, past, future } = useObservableState(projectService.snapshot$);
   const [width, onWidthChange] = useState(project.width);
   const [height, onHeightChange] = useState(project.height);
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const usage = useMemo(() => summarizeUsage(project), [project]);
-  const usageCount = usage.length;
   const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
-  const projectWidth = project.width;
-  const projectHeight = project.height;
-  const pastCount = past.length;
-  const futureCount = future.length;
   const selectedSizePreset = sizePresets.find((preset) => preset.width === width && preset.height === height)?.label ?? '';
   const defaultProjectName = useMemo(() => exports.defaultProjectName(language), [exports, language]);
   useEffect(() => { onWidthChange(project.width); onHeightChange(project.height); }, [project.width, project.height]);
@@ -58,7 +52,7 @@ export function EditorTopBar() {
         accept="application/json,.json"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
-          if (file) void images.importRecord(file).catch((error: unknown) => notice.show(error instanceof Error ? error.message : text.invalidRecord));
+          if (file) void images.importRecord(file).catch((error: unknown) => notice.show(error instanceof Error ? error.message : localization.text.invalidRecord));
           event.currentTarget.value = '';
         }}
       />
@@ -66,31 +60,31 @@ export function EditorTopBar() {
         <div className="brand-lockup" aria-label="Perler Beads Generator">
           <span className="logo-mark" aria-hidden="true"><span /><span /><span /><span /></span>
           <div>
-            <strong>{text.appName}</strong>
-            <small>{text.status(projectWidth, projectHeight, totalBeads, usageCount)}</small>
+            <strong>{localization.text.appName}</strong>
+            <small>{localization.text.status(project.width, project.height, totalBeads, usage.length)}</small>
           </div>
         </div>
 
         <div className="topbar-workspace">
           <div className="topbar-params canvas-params" aria-label="Canvas controls">
-            <span className="topbar-control-label">{text.board}</span>
+            <span className="topbar-control-label">{localization.text.board}</span>
             <div className="topbar-dimension-group">
               <input aria-label="Canvas width" type="number" min={8} max={180} value={width} onChange={(event) => onWidthChange(Number(event.target.value))} />
               <span className="size-times">×</span>
               <input aria-label="Canvas height" type="number" min={8} max={180} value={height} onChange={(event) => onHeightChange(Number(event.target.value))} />
             </div>
             <select className="canvas-preset-select" aria-label="Canvas preset" value={selectedSizePreset || ''} onChange={(event) => onPresetChange(event.target.value)}>
-              <option value="" disabled hidden>{text.commonSizes}</option>
+              <option value="" disabled hidden>{localization.text.commonSizes}</option>
               {sizePresets.map((preset) => <option key={preset.label} value={preset.label}>{preset.label}</option>)}
             </select>
-            <button className="canvas-apply-button" onClick={onResize}>{text.apply}</button>
+            <button className="canvas-apply-button" onClick={onResize}>{localization.text.apply}</button>
           </div>
           <div className="topbar-command-zone">
             <div className="topbar-actions export-actions">
-              <PrintExportMenu text={text} defaultProjectName={defaultProjectName} onExport={onExportPrint} />
-              <button className="export-action-button" title={text.exportUsageTitle} onClick={onExportUsage}>{text.exportUsageFull}</button>
-              <button className="export-action-button" title={text.exportRecordTitle} onClick={onExportRecord}>{text.exportRecordFull}</button>
-              <button className="export-action-button" title={text.importRecordTitle} onClick={onImportRecord}>{text.importRecordFull}</button>
+              <PrintExportMenu text={localization.text} defaultProjectName={defaultProjectName} onExport={onExportPrint} />
+              <button className="export-action-button" title={localization.text.exportUsageTitle} onClick={onExportUsage}>{localization.text.exportUsageFull}</button>
+              <button className="export-action-button" title={localization.text.exportRecordTitle} onClick={onExportRecord}>{localization.text.exportRecordFull}</button>
+              <button className="export-action-button" title={localization.text.importRecordTitle} onClick={onImportRecord}>{localization.text.importRecordFull}</button>
             </div>
           </div>
         </div>
@@ -100,7 +94,7 @@ export function EditorTopBar() {
             <GitHubIcon />
             <span>GitHub</span>
           </a>
-          <div className="language-toggle" aria-label={text.language}>
+          <div className="language-toggle" aria-label={localization.text.language}>
             <button className={language === 'zh' ? 'active' : ''} onClick={() => onLanguageChange('zh')}>中</button>
             <button className={language === 'en' ? 'active' : ''} onClick={() => onLanguageChange('en')}>EN</button>
           </div>
@@ -109,11 +103,11 @@ export function EditorTopBar() {
 
       <div className="project-toolbar" role="toolbar" aria-label={language === 'zh' ? '编辑操作' : 'Edit actions'}>
         <div className="project-actions">
-          <button className="project-action-button primary-action" onClick={onNew}><PlusIcon /><span>{text.new}</span></button>
-          <button className="project-action-button" onClick={onClear}><TrashIcon /><span>{text.clear}</span></button>
+          <button className="project-action-button primary-action" onClick={onNew}><PlusIcon /><span>{localization.text.new}</span></button>
+          <button className="project-action-button" onClick={onClear}><TrashIcon /><span>{localization.text.clear}</span></button>
           <span className="project-action-divider" aria-hidden="true" />
-          <button className="project-action-button history-action" onClick={onUndo} disabled={pastCount === 0} title={`${text.undo} (Ctrl+Z / Meta+Z)`} aria-keyshortcuts="Control+Z Meta+Z"><UndoIcon /><span>{text.undo}</span></button>
-          <button className="project-action-button history-action" onClick={onRedo} disabled={futureCount === 0} title={`${text.redo} (Ctrl+Shift+Z / Meta+Shift+Z / Ctrl+Y)`} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"><RedoIcon /><span>{text.redo}</span></button>
+          <button className="project-action-button history-action" onClick={onUndo} disabled={past.length === 0} title={`${localization.text.undo} (Ctrl+Z / Meta+Z)`} aria-keyshortcuts="Control+Z Meta+Z"><UndoIcon /><span>{localization.text.undo}</span></button>
+          <button className="project-action-button history-action" onClick={onRedo} disabled={future.length === 0} title={`${localization.text.redo} (Ctrl+Shift+Z / Meta+Shift+Z / Ctrl+Y)`} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"><RedoIcon /><span>{localization.text.redo}</span></button>
         </div>
       </div>
     </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type ImagePoint = { x: number; y: number };
 export type GridCorners = [ImagePoint, ImagePoint, ImagePoint, ImagePoint];
@@ -22,10 +22,9 @@ const labels = {
 };
 
 export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, language }: Props) {
-  const t = labels[language];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -41,24 +40,30 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
   ]);
 
   useEffect(() => {
-    const image = new Image();
+    const nextImage = new Image();
     const url = URL.createObjectURL(file);
-    image.onload = () => {
-      imageRef.current = image;
-      const initialRows = Math.max(8, Math.min(180, Math.round(columns * image.naturalHeight / image.naturalWidth)));
+    setImage(null);
+    nextImage.onload = () => {
+      setImage(nextImage);
+      const initialColumns = clamp(initialWidth, 8, 180);
+      const initialRows = Math.max(8, Math.min(180, Math.round(initialColumns * nextImage.naturalHeight / nextImage.naturalWidth)));
       setRows(initialRows);
       setRowsInput(String(initialRows));
-      draw();
     };
-    image.src = url;
+    nextImage.src = url;
+    return () => {
+      nextImage.onload = null;
+      URL.revokeObjectURL(url);
+    };
+  }, [file, initialWidth]);
+
+  useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
     });
     if (stageRef.current) observer.observe(stageRef.current);
-    return () => { URL.revokeObjectURL(url); observer.disconnect(); };
-  }, [file]);
-
-  useEffect(() => { draw(); }, [size, view, corners, columns, rows]);
+    return () => observer.disconnect();
+  }, []);
 
   function commitColumnsInput() {
     const parsed = Number(columnsInput);
@@ -74,18 +79,16 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
     setRowsInput(String(next));
   }
 
-  function fitView() {
-    const image = imageRef.current;
+  const fitView = useCallback(() => {
     if (!image || !size.width || !size.height) return;
     const scale = Math.min((size.width - 48) / image.naturalWidth, (size.height - 48) / image.naturalHeight);
     setView({ scale, x: (size.width - image.naturalWidth * scale) / 2, y: (size.height - image.naturalHeight * scale) / 2 });
-  }
+  }, [image, size.width, size.height]);
 
-  useEffect(() => { if (imageRef.current && size.width && size.height) fitView(); }, [size]);
+  useEffect(() => { fitView(); }, [fitView]);
 
-  function draw() {
+  useEffect(() => {
     const canvas = canvasRef.current;
-    const image = imageRef.current;
     if (!canvas || !image || size.width === 0) return;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(size.width * dpr);
@@ -98,10 +101,9 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
     ctx.clearRect(0, 0, size.width, size.height);
     ctx.fillStyle = '#161b22';
     ctx.fillRect(0, 0, size.width, size.height);
-    const transform = viewRef.current;
     ctx.save();
-    ctx.translate(transform.x, transform.y);
-    ctx.scale(transform.scale, transform.scale);
+    ctx.translate(view.x, view.y);
+    ctx.scale(view.scale, view.scale);
     ctx.drawImage(image, 0, 0);
     const pts = corners.map((p) => ({ x: p.x * image.naturalWidth, y: p.y * image.naturalHeight }));
     const left = pts[0].x;
@@ -114,7 +116,7 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
     ctx.fillStyle = 'rgba(51, 190, 154, 0.09)';
     ctx.fill();
     ctx.strokeStyle = '#35d2a7';
-    ctx.lineWidth = 1.5 / transform.scale;
+    ctx.lineWidth = 1.5 / view.scale;
     ctx.stroke();
     ctx.beginPath();
     for (let x = 1; x < columns; x += 1) {
@@ -126,19 +128,18 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
       ctx.moveTo(left, gridY); ctx.lineTo(right, gridY);
     }
     ctx.strokeStyle = 'rgba(255,255,255,.68)';
-    ctx.lineWidth = 0.7 / transform.scale;
+    ctx.lineWidth = 0.7 / view.scale;
     ctx.stroke();
     pts.forEach((p) => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 7 / transform.scale, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 7 / view.scale, 0, Math.PI * 2);
       ctx.fillStyle = '#35d2a7'; ctx.fill();
-      ctx.lineWidth = 2 / transform.scale; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.lineWidth = 2 / view.scale; ctx.strokeStyle = '#fff'; ctx.stroke();
     });
     ctx.restore();
-  }
+  }, [image, size, view, corners, columns, rows]);
 
   function toImagePoint(clientX: number, clientY: number): ImagePoint | null {
-    const image = imageRef.current;
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!image || !rect) return null;
     const v = viewRef.current;
@@ -146,6 +147,7 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
   }
 
   function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!image) return;
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
     if (pointersRef.current.size === 2) {
@@ -163,7 +165,6 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const p = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-    const image = imageRef.current!;
     const transform = viewRef.current;
     const hit = corners.findIndex((corner) => {
       const x = transform.x + corner.x * image.naturalWidth * transform.scale;
@@ -214,28 +215,28 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
   }
 
   return (
-    <div className="image-grid-editor" role="dialog" aria-modal="true" aria-label={t.title}>
+    <div className="image-grid-editor" role="dialog" aria-modal="true" aria-label={labels[language].title}>
       <header className="image-grid-editor-header">
-        <strong>{t.title}</strong>
+        <strong>{labels[language].title}</strong>
         <div className="image-grid-editor-actions">
-          <button type="button" onClick={onCancel}>{t.cancel}</button>
-          <button type="button" className="primary" onClick={() => onConfirm(columns, rows, corners)}>{t.apply}</button>
+          <button type="button" onClick={onCancel}>{labels[language].cancel}</button>
+          <button type="button" className="primary" onClick={() => onConfirm(columns, rows, corners)}>{labels[language].apply}</button>
         </div>
       </header>
       <div className="image-grid-editor-body">
         <div className="image-grid-editor-stage" ref={stageRef}>
           <canvas ref={canvasRef} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(event) => { pointersRef.current.delete(event.pointerId); dragRef.current = null; }} onPointerCancel={(event) => { pointersRef.current.delete(event.pointerId); dragRef.current = null; }} onWheel={(event) => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.12 : 0.89, event.clientX - rect.left, event.clientY - rect.top); }} />
           <div className="image-grid-zoom">
-            <button type="button" title={t.zoomOut} onClick={() => zoom(0.8)}>−</button>
-            <button type="button" title={t.zoomIn} onClick={() => zoom(1.25)}>+</button>
-            <button type="button" title={t.fit} onClick={fitView}>⌂</button>
+            <button type="button" title={labels[language].zoomOut} onClick={() => zoom(0.8)}>−</button>
+            <button type="button" title={labels[language].zoomIn} onClick={() => zoom(1.25)}>+</button>
+            <button type="button" title={labels[language].fit} onClick={fitView}>⌂</button>
           </div>
         </div>
         <aside className="image-grid-editor-sidebar">
-          <p>{t.dragHint}</p>
-          <label>{t.columns}<input type="text" inputMode="numeric" pattern="[0-9]*" value={columnsInput} onChange={(event) => setColumnsInput(event.target.value)} onBlur={commitColumnsInput} /></label>
-          <label>{t.rows}<input type="text" inputMode="numeric" pattern="[0-9]*" value={rowsInput} onChange={(event) => setRowsInput(event.target.value)} onBlur={commitRowsInput} /></label>
-          <div className="image-grid-editor-legend"><span /><small>{t.image} · {t.grid}</small></div>
+          <p>{labels[language].dragHint}</p>
+          <label>{labels[language].columns}<input type="text" inputMode="numeric" pattern="[0-9]*" value={columnsInput} onChange={(event) => setColumnsInput(event.target.value)} onBlur={commitColumnsInput} /></label>
+          <label>{labels[language].rows}<input type="text" inputMode="numeric" pattern="[0-9]*" value={rowsInput} onChange={(event) => setRowsInput(event.target.value)} onBlur={commitRowsInput} /></label>
+          <div className="image-grid-editor-legend"><span /><small>{labels[language].image} · {labels[language].grid}</small></div>
         </aside>
       </div>
     </div>

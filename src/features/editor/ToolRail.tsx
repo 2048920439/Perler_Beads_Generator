@@ -10,7 +10,6 @@ import { LocalizationService } from '@/services/localization-service';
 export function ToolRail() {
   const localization = useService(LocalizationService);
   const language = useObservableState(localization.snapshot$);
-  const text = localization.text;
   const projectService = useService(ProjectService);
   const { project } = useObservableState(projectService.snapshot$);
   const toolService = useService(ToolService);
@@ -45,20 +44,19 @@ export function ToolRail() {
   const setTextToolDirection = (value: TextDirection) => toolService.setTextToolDirection(value);
   const setTextToolSize = (value: number) => toolService.setTextToolSize(value);
   const setTextToolSpacing = (value: number) => toolService.setTextToolSpacing(value);
-  const rightClickAction = project.settings.rightClickAction;
   const shapeLabel = {
-    line: text.shapeLine,
-    rectangle: text.shapeRectangle,
-    square: text.shapeSquare,
-    ellipse: text.shapeEllipse,
-    circle: text.shapeCircle,
-    triangle: text.shapeTriangle,
-    arrow: text.shapeArrow,
+    line: localization.text.shapeLine,
+    rectangle: localization.text.shapeRectangle,
+    square: localization.text.shapeSquare,
+    ellipse: localization.text.shapeEllipse,
+    circle: localization.text.shapeCircle,
+    triangle: localization.text.shapeTriangle,
+    arrow: localization.text.shapeArrow,
   } satisfies Record<ShapeKind, string>;
   const arrowLabel = {
-    single: text.arrowSingle,
-    double: text.arrowDouble,
-    block: text.arrowBlock,
+    single: localization.text.arrowSingle,
+    double: localization.text.arrowDouble,
+    block: localization.text.arrowBlock,
   } satisfies Record<ArrowKind, string>;
   return (
       <aside className="tool-rail">
@@ -66,8 +64,8 @@ export function ToolRail() {
           <button
             key={item.id}
             className={tool === item.id ? 'tool-button active' : 'tool-button'}
-            aria-label={text.tools[item.id].title}
-            title={`${text.tools[item.id].title} (${item.shortcut}) — ${text.tools[item.id].hint}`}
+            aria-label={localization.text.tools[item.id].title}
+            title={`${localization.text.tools[item.id].title} (${item.shortcut}) — ${localization.text.tools[item.id].hint}`}
             aria-keyshortcuts={item.shortcut.toLowerCase()}
             aria-pressed={tool === item.id}
             type="button"
@@ -79,26 +77,26 @@ export function ToolRail() {
             onClick={() => activateTool(item.id)}
           >
             <ToolIcon tool={item.id} />
-            <span>{text.tools[item.id].title}</span>
+            <span>{localization.text.tools[item.id].title}</span>
           </button>
         ))}
         {tool === 'pencil' && showPencilOptions && (
           <div className="tool-options pencil-options" onMouseLeave={() => setShowPencilOptions(false)}>
-            <div className="right-click-toggle compact" aria-label={text.rightClick}>
+            <div className="right-click-toggle compact" aria-label={localization.text.rightClick}>
               <span className="field-label-with-help">
-                {text.rightClick}
-                <span className="help-dot mini" data-tooltip={text.rightClickHint} aria-label={text.rightClickHint} tabIndex={0}>?</span>
+                {localization.text.rightClick}
+                <span className="help-dot mini" data-tooltip={localization.text.rightClickHint} aria-label={localization.text.rightClickHint} tabIndex={0}>?</span>
               </span>
               <div>
                 {(['pan', 'erase'] as RightClickAction[]).map((action) => (
                   <button
                     key={action}
-                    className={rightClickAction === action ? 'active' : ''}
+                    className={project.settings.rightClickAction === action ? 'active' : ''}
                     type="button"
-                    aria-pressed={rightClickAction === action}
+                    aria-pressed={project.settings.rightClickAction === action}
                     onClick={() => projectService.updateSettings({ rightClickAction: action })}
                   >
-                    {action === 'pan' ? text.pan : text.erase}
+                    {action === 'pan' ? localization.text.pan : localization.text.erase}
                   </button>
                 ))}
               </div>
@@ -108,8 +106,8 @@ export function ToolRail() {
         {tool === 'eraser' && showEraserOptions && (
           <div className="tool-options eraser-options" onMouseLeave={() => setShowEraserOptions(false)}>
             <div className="tool-options-header">
-              <span>{text.eraserSize}</span>
-              <strong>{text.brushCells(eraserSize)}</strong>
+              <span>{localization.text.eraserSize}</span>
+              <strong>{localization.text.brushCells(eraserSize)}</strong>
             </div>
             <div className="brush-preview" aria-hidden="true">
               {eraserSize > 0 ? (
@@ -119,7 +117,7 @@ export function ToolRail() {
               )}
             </div>
             <input
-              aria-label={text.eraserSize}
+              aria-label={localization.text.eraserSize}
               type="range"
               min={0}
               max={9}
@@ -131,8 +129,8 @@ export function ToolRail() {
         )}
         {tool === 'remove' && showRemoveOptions && (
           <div className="tool-options remove-options" onMouseLeave={() => setShowRemoveOptions(false)}>
-            <div className="right-click-toggle compact remove-scope-toggle" aria-label={text.removeScope}>
-              <span>{text.removeScope}</span>
+            <div className="right-click-toggle compact remove-scope-toggle" aria-label={localization.text.removeScope}>
+              <span>{localization.text.removeScope}</span>
               <div>
                 {(['same-connected', 'all-same-color', 'connected'] as RemoveMode[]).map((mode) => (
                   <button
@@ -143,10 +141,10 @@ export function ToolRail() {
                     onClick={() => setRemoveMode(mode)}
                   >
                     {mode === 'same-connected'
-                      ? text.removeSameConnected
+                      ? localization.text.removeSameConnected
                       : mode === 'all-same-color'
-                        ? text.removeAllSameColor
-                        : text.removeConnected}
+                        ? localization.text.removeAllSameColor
+                        : localization.text.removeConnected}
                   </button>
                 ))}
               </div>
@@ -155,8 +153,8 @@ export function ToolRail() {
         )}
         {tool === 'move' && showMoveOptions && (
           <div className="tool-options move-options" onMouseLeave={() => setShowMoveOptions(false)}>
-            <div className="right-click-toggle compact" aria-label={text.moveScope}>
-              <span>{text.moveScope}</span>
+            <div className="right-click-toggle compact" aria-label={localization.text.moveScope}>
+              <span>{localization.text.moveScope}</span>
               <div>
                 {(['layer', 'partial'] as MoveMode[]).map((mode) => (
                   <button
@@ -166,7 +164,7 @@ export function ToolRail() {
                     aria-pressed={moveMode === mode}
                     onClick={() => setMoveMode(mode)}
                   >
-                    {mode === 'layer' ? text.moveLayer : text.movePartial}
+                    {mode === 'layer' ? localization.text.moveLayer : localization.text.movePartial}
                   </button>
                 ))}
               </div>
@@ -179,8 +177,8 @@ export function ToolRail() {
             onMouseLeave={() => setShowClipboardOptions(false)}
           >
             {tool === 'copy' && (
-              <div className="right-click-toggle compact clipboard-mode-toggle" aria-label={text.copyScope}>
-                <span>{text.copyScope}</span>
+              <div className="right-click-toggle compact clipboard-mode-toggle" aria-label={localization.text.copyScope}>
+                <span>{localization.text.copyScope}</span>
                 <div>
                   {(['connected', 'selection'] as CopyMode[]).map((mode) => (
                     <button
@@ -193,25 +191,25 @@ export function ToolRail() {
                         setCopySelectionIndices([]);
                       }}
                     >
-                      {mode === 'connected' ? text.copyConnected : text.copySelection}
+                      {mode === 'connected' ? localization.text.copyConnected : localization.text.copySelection}
                     </button>
                   ))}
                 </div>
-                {copyMode === 'selection' && <p className="tool-hint compact-hint">{text.copySelectionHint}</p>}
+                {copyMode === 'selection' && <p className="tool-hint compact-hint">{localization.text.copySelectionHint}</p>}
               </div>
             )}
             <div className="clipboard-tool-header">
               <div>
-                <strong>{text.clipboardPreview}</strong>
+                <strong>{localization.text.clipboardPreview}</strong>
                 {clipboardPattern && (
-                  <span>{text.clipboardSize(clipboardPattern.width, clipboardPattern.height, clipboardPattern.cells.filter(Boolean).length)}</span>
+                  <span>{localization.text.clipboardSize(clipboardPattern.width, clipboardPattern.height, clipboardPattern.cells.filter(Boolean).length)}</span>
                 )}
               </div>
               <button
                 className="clipboard-reset-button"
                 type="button"
-                aria-label={text.resetClipboard}
-                title={text.resetClipboard}
+                aria-label={localization.text.resetClipboard}
+                title={localization.text.resetClipboard}
                 disabled={!clipboardPattern && copySelectionIndices.length === 0}
                 onClick={() => toolService.resetClipboard()}
               >
@@ -221,14 +219,14 @@ export function ToolRail() {
             {clipboardPattern ? (
               <ClipboardPreview pattern={clipboardPattern} />
             ) : (
-              <div className="clipboard-empty">{text.clipboardEmpty}</div>
+              <div className="clipboard-empty">{localization.text.clipboardEmpty}</div>
             )}
           </div>
         )}
         {tool === 'mirror' && showMirrorOptions && (
           <div className="tool-options mirror-options" onMouseLeave={() => setShowMirrorOptions(false)}>
-            <div className="right-click-toggle compact" aria-label={text.moveScope}>
-              <span>{text.moveScope}</span>
+            <div className="right-click-toggle compact" aria-label={localization.text.moveScope}>
+              <span>{localization.text.moveScope}</span>
               <div>
                 {(['layer', 'partial'] as MoveMode[]).map((mode) => (
                   <button
@@ -238,13 +236,13 @@ export function ToolRail() {
                     aria-pressed={mirrorMode === mode}
                     onClick={() => setMirrorMode(mode)}
                   >
-                    {mode === 'layer' ? text.moveLayer : text.movePartial}
+                    {mode === 'layer' ? localization.text.moveLayer : localization.text.movePartial}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="right-click-toggle compact" aria-label={text.mirrorDirection}>
-              <span>{text.mirrorDirection}</span>
+            <div className="right-click-toggle compact" aria-label={localization.text.mirrorDirection}>
+              <span>{localization.text.mirrorDirection}</span>
               <div>
                 {(['horizontal', 'vertical'] as MirrorDirection[]).map((direction) => (
                   <button
@@ -254,7 +252,7 @@ export function ToolRail() {
                     aria-pressed={mirrorDirection === direction}
                     onClick={() => setMirrorDirection(direction)}
                   >
-                    {direction === 'horizontal' ? text.mirrorHorizontal : text.mirrorVertical}
+                    {direction === 'horizontal' ? localization.text.mirrorHorizontal : localization.text.mirrorVertical}
                   </button>
                 ))}
               </div>
@@ -263,8 +261,8 @@ export function ToolRail() {
         )}
         {tool === 'shape' && showShapeOptions && (
           <div className="tool-options shape-options" onMouseLeave={() => setShowShapeOptions(false)}>
-            <div className="right-click-toggle compact" aria-label={text.shapeStyle}>
-              <span>{text.shapeStyle}</span>
+            <div className="right-click-toggle compact" aria-label={localization.text.shapeStyle}>
+              <span>{localization.text.shapeStyle}</span>
               <div>
                 {(['outline', 'filled'] as ShapeFillMode[]).map((mode) => (
                   <button
@@ -275,13 +273,13 @@ export function ToolRail() {
                     disabled={shapeKind === 'line' || shapeKind === 'arrow'}
                     onClick={() => setShapeFillMode(mode)}
                   >
-                    {mode === 'outline' ? text.shapeOutline : text.shapeFilled}
+                    {mode === 'outline' ? localization.text.shapeOutline : localization.text.shapeFilled}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="shape-picker" aria-label={text.shapeType}>
-              <span>{text.shapeType}</span>
+            <div className="shape-picker" aria-label={localization.text.shapeType}>
+              <span>{localization.text.shapeType}</span>
               <div>
                 {(['line', 'rectangle', 'square', 'ellipse', 'circle', 'triangle', 'arrow'] as ShapeKind[]).map((kind) => (
                   <button
@@ -298,8 +296,8 @@ export function ToolRail() {
               </div>
             </div>
             {shapeKind === 'arrow' && (
-              <div className="shape-picker arrow-picker" aria-label={text.arrowStyle}>
-                <span>{text.arrowStyle}</span>
+              <div className="shape-picker arrow-picker" aria-label={localization.text.arrowStyle}>
+                <span>{localization.text.arrowStyle}</span>
                 <div>
                   {(['single', 'double', 'block'] as ArrowKind[]).map((kind) => (
                     <button
@@ -322,12 +320,12 @@ export function ToolRail() {
           <div className="tool-options text-options">
             <label className="text-tool-field">
               <span className="text-field-title">
-                {text.textContent}
+                {localization.text.textContent}
                 <button
                   className="tool-options-close"
                   type="button"
-                  aria-label={text.close}
-                  title={text.close}
+                  aria-label={localization.text.close}
+                  title={localization.text.close}
                   onClick={() => setShowTextOptions(false)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -340,12 +338,12 @@ export function ToolRail() {
                 type="text"
                 maxLength={32}
                 value={textToolValue}
-                placeholder={text.textPlaceholder}
+                placeholder={localization.text.textPlaceholder}
                 onChange={(event) => setTextToolValue(event.target.value)}
               />
             </label>
-            <div className="right-click-toggle compact" aria-label={text.textDirection}>
-              <span>{text.textDirection}</span>
+            <div className="right-click-toggle compact" aria-label={localization.text.textDirection}>
+              <span>{localization.text.textDirection}</span>
               <div>
                 {(['horizontal', 'vertical'] as TextDirection[]).map((direction) => (
                   <button
@@ -355,14 +353,14 @@ export function ToolRail() {
                     aria-pressed={textToolDirection === direction}
                     onClick={() => setTextToolDirection(direction)}
                   >
-                    {direction === 'horizontal' ? text.textHorizontal : text.textVertical}
+                    {direction === 'horizontal' ? localization.text.textHorizontal : localization.text.textVertical}
                   </button>
                 ))}
               </div>
             </div>
             <div className="tool-options-header">
-              <span>{text.textSize}</span>
-              <label className="tool-number-field" aria-label={text.textSize}>
+              <span>{localization.text.textSize}</span>
+              <label className="tool-number-field" aria-label={localization.text.textSize}>
                 <input
                   type="number"
                   min={5}
@@ -375,7 +373,7 @@ export function ToolRail() {
               </label>
             </div>
             <input
-              aria-label={text.textSize}
+              aria-label={localization.text.textSize}
               type="range"
               min={5}
               max={72}
@@ -384,8 +382,8 @@ export function ToolRail() {
               onChange={(event) => setTextToolSize(Number(event.target.value))}
             />
             <div className="tool-options-header">
-              <span>{text.textSpacing}</span>
-              <label className="tool-number-field" aria-label={text.textSpacing}>
+              <span>{localization.text.textSpacing}</span>
+              <label className="tool-number-field" aria-label={localization.text.textSpacing}>
                 <input
                   type="number"
                   min={0}
@@ -398,7 +396,7 @@ export function ToolRail() {
               </label>
             </div>
             <input
-              aria-label={text.textSpacing}
+              aria-label={localization.text.textSpacing}
               type="range"
               min={0}
               max={24}
@@ -411,9 +409,9 @@ export function ToolRail() {
         {tool === 'pan' && showPanOptions && (
           <div className="tool-options pan-options" onMouseLeave={() => setShowPanOptions(false)}>
             <div className="tool-options-header">
-              <strong>{text.tools.pan.title}</strong>
+              <strong>{localization.text.tools.pan.title}</strong>
             </div>
-            <p className="tool-hint">{text.panToolHint}</p>
+            <p className="tool-hint">{localization.text.panToolHint}</p>
           </div>
         )}
       </aside>

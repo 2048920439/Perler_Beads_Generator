@@ -11,7 +11,6 @@ export function AdjustmentPanel() {
   const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
   const language = useObservableState(localization.snapshot$);
-  const text = localization.text;
   const { project } = useObservableState(projectService.snapshot$);
   const activeLayer = projectService.activeLayer;
   const activeLayerName = layerDisplayName(activeLayer, project.layers.findIndex((layer) => layer.id === activeLayer.id), language);
@@ -26,16 +25,16 @@ export function AdjustmentPanel() {
   return (
     <section className="panel-section panel-tab-body adjustment-section">
       <div className="adjustment-header">
-        <h2>{text.adjustmentTitle}</h2>
+        <h2>{localization.text.adjustmentTitle}</h2>
         <span>{activeLayerName}</span>
       </div>
-      <div className="adjustment-help">{text.adjustmentHint}</div>
+      <div className="adjustment-help">{localization.text.adjustmentHint}</div>
       {([
-        ['brightness', text.brightness, -50, 50, '%'],
-        ['contrast', text.contrast, -50, 50, '%'],
-        ['saturation', text.saturation, -50, 50, '%'],
-        ['temperature', text.temperature, -50, 50, '%'],
-        ['hue', text.hue, -180, 180, 'deg'],
+        ['brightness', localization.text.brightness, -50, 50, '%'],
+        ['contrast', localization.text.contrast, -50, 50, '%'],
+        ['saturation', localization.text.saturation, -50, 50, '%'],
+        ['temperature', localization.text.temperature, -50, 50, '%'],
+        ['hue', localization.text.hue, -180, 180, 'deg'],
       ] as const).map(([key, label, min, max, unit]) => (
         <label className="adjustment-range" key={key}>
           <span>
@@ -54,29 +53,29 @@ export function AdjustmentPanel() {
       ))}
       <div className="adjustment-actions">
         <button type="button" onClick={onReset} disabled={!hasAdjustments(adjustments)}>
-          {text.resetAdjustments}
+          {localization.text.resetAdjustments}
         </button>
       </div>
       <div className="adjustment-effect-card">
-        <strong>{text.effects}</strong>
+        <strong>{localization.text.effects}</strong>
         <div className="adjustment-effect-grid">
-          <button type="button" onClick={() => onApplyEffect('invert', text.invertEffect)} disabled={activeLayer.locked}>
-            {text.invertEffect}
+          <button type="button" onClick={() => onApplyEffect('invert', localization.text.invertEffect)} disabled={activeLayer.locked}>
+            {localization.text.invertEffect}
           </button>
-          <button type="button" onClick={() => onApplyEffect('grayscale', text.grayscaleEffect)} disabled={activeLayer.locked}>
-            {text.grayscaleEffect}
+          <button type="button" onClick={() => onApplyEffect('grayscale', localization.text.grayscaleEffect)} disabled={activeLayer.locked}>
+            {localization.text.grayscaleEffect}
           </button>
-          <button type="button" onClick={() => onApplyEffect('blackWhite', text.blackWhiteEffect)} disabled={activeLayer.locked}>
-            {text.blackWhiteEffect}
+          <button type="button" onClick={() => onApplyEffect('blackWhite', localization.text.blackWhiteEffect)} disabled={activeLayer.locked}>
+            {localization.text.blackWhiteEffect}
           </button>
         </div>
       </div>
       <div className="adjustment-tool-card">
         <div className="adjustment-tool-heading">
-          <strong>{text.colorCleanup}</strong>
+          <strong>{localization.text.colorCleanup}</strong>
           <b>{colorCleanupStrength}</b>
         </div>
-        <span>{text.colorCleanupHint}</span>
+        <span>{localization.text.colorCleanupHint}</span>
         <input
           aria-label="Color cleanup strength"
           type="range"
@@ -87,15 +86,15 @@ export function AdjustmentPanel() {
           onChange={(event) => onColorCleanupStrengthChange(Number(event.target.value))}
         />
         <button type="button" onClick={onApplyColorCleanup} disabled={activeLayer.locked}>
-          {text.applyColorCleanup}
+          {localization.text.applyColorCleanup}
         </button>
       </div>
       <div className="adjustment-tool-card">
         <div className="adjustment-tool-heading">
-          <strong>{text.colorLimit}</strong>
+          <strong>{localization.text.colorLimit}</strong>
           <b>{layerColorLimit}</b>
         </div>
-        <span>{text.colorLimitHint}</span>
+        <span>{localization.text.colorLimitHint}</span>
         <input
           aria-label="Layer color limit"
           type="range"
@@ -106,7 +105,7 @@ export function AdjustmentPanel() {
           onChange={(event) => onLayerColorLimitChange(Number(event.target.value))}
         />
         <button type="button" onClick={onApplyLayerColorLimit} disabled={activeLayer.locked}>
-          {text.applyColorLimit}
+          {localization.text.applyColorLimit}
         </button>
       </div>
     </section>

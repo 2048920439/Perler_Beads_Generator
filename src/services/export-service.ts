@@ -38,13 +38,12 @@ export class ExportService extends BaseService {
   }
 
   exportPrint(options: PrintExportOptions): void {
-    const project = this.projectService.snapshot.project;
     const exportOptions = {
       ...options,
       projectName: options.projectName?.trim() || this.defaultProjectName(),
       layerLabelPrefix: this.localization.language === 'en' ? 'Layer' : '图层',
     };
-    if (options.format === 'pdf') downloadPrintPdf(project, exportOptions);
-    else downloadPrintPng(project, exportOptions);
+    if (options.format === 'pdf') downloadPrintPdf(this.projectService.snapshot.project, exportOptions);
+    else downloadPrintPng(this.projectService.snapshot.project, exportOptions);
   }
 }

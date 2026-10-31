@@ -24,7 +24,6 @@ export function RightPanel() {
   const toolService = useService(ToolService);
   const view = useService(WorkspaceViewService);
   const language = useObservableState(localization.snapshot$);
-  const text = localization.text;
   const notice = useObservableState(noticeService.snapshot$);
   const { mode: paletteMode, selectedColorId, recentColorIds } = useObservableState(paletteService.snapshot$);
   const { tool } = useObservableState(toolService.snapshot$);
@@ -95,7 +94,7 @@ export function RightPanel() {
         aria-selected={rightTab === 'palette'}
         onClick={() => setRightTab('palette')}
       >
-        {text.palette}
+        {localization.text.palette}
       </button>
       <button
         className={rightTab === 'layers' ? 'active' : ''}
@@ -103,7 +102,7 @@ export function RightPanel() {
         aria-selected={rightTab === 'layers'}
         onClick={() => setRightTab('layers')}
       >
-        {text.layers}
+        {localization.text.layers}
       </button>
       <button
         className={rightTab === 'usage' ? 'active' : ''}
@@ -111,7 +110,7 @@ export function RightPanel() {
         aria-selected={rightTab === 'usage'}
         onClick={() => setRightTab('usage')}
       >
-        {text.usage}
+        {localization.text.usage}
       </button>
       <button
         className={rightTab === 'adjustments' ? 'active' : ''}
@@ -119,7 +118,7 @@ export function RightPanel() {
         aria-selected={rightTab === 'adjustments'}
         onClick={() => setRightTab('adjustments')}
       >
-        {text.adjustments}
+        {localization.text.adjustments}
       </button>
     </div>
 
@@ -127,10 +126,10 @@ export function RightPanel() {
       <div>
         <strong>{notice}</strong>
         <span>
-          {text.panelStatus(project.width, project.height, usage.length, totalBeads, boardCount)}
+          {localization.text.panelStatus(project.width, project.height, usage.length, totalBeads, boardCount)}
         </span>
       </div>
-      <span className="status-pill">{text.tools[tool].title}</span>
+      <span className="status-pill">{localization.text.tools[tool].title}</span>
     </section>
 
     <details className="panel-section canvas-colors-section" open>
@@ -153,17 +152,17 @@ export function RightPanel() {
               <small>{displayName(row.color)}</small>
             </span>
             <span className="usage-count">
-              <strong>{text.layerBeadCount(row.count)}</strong>
+              <strong>{localization.text.layerBeadCount(row.count)}</strong>
             </span>
           </button>
         ))}
-        {usage.length === 0 && <div className="usage-empty">{text.noUsage}</div>}
+        {usage.length === 0 && <div className="usage-empty">{localization.text.noUsage}</div>}
       </div>
     </details>
 
     {rightTab === 'palette' && (
       <section className="panel-section panel-tab-body palette-section">
-        <h2>{text.palette}</h2>
+        <h2>{localization.text.palette}</h2>
         <div className="palette-selected-card">
           <span style={{ backgroundColor: selectedColor?.hex }} />
           <div className="palette-selected-main">
@@ -175,7 +174,7 @@ export function RightPanel() {
           </div>
         </div>
         <div className="recent-colors-field">
-          <span>{text.recentColors}</span>
+          <span>{localization.text.recentColors}</span>
           <div className="recent-color-row">
             {recentColors.map((color) => (
               <button
@@ -183,7 +182,7 @@ export function RightPanel() {
                 type="button"
                 className={selectedColorId === color.id ? 'active' : ''}
                 title={`${displayCode(color)} ${displayName(color)}`}
-                aria-label={`${text.recentColors} ${displayCode(color)}`}
+                aria-label={`${localization.text.recentColors} ${displayCode(color)}`}
                 onClick={() => selectColor(color.id, { updateRecent: false })}
               >
                 <span style={{ backgroundColor: color.hex }} />
@@ -193,10 +192,10 @@ export function RightPanel() {
           </div>
         </div>
         <div className="readonly-brand-field">
-          {text.brandCodes}
+          {localization.text.brandCodes}
           <select value={paletteMode} onChange={(event) => setPaletteMode(event.target.value as PaletteMode)}>
-            <option value="basic">{text.mardBasic}</option>
-            <option value="complete">{text.mardComplete}</option>
+            <option value="basic">{localization.text.mardBasic}</option>
+            <option value="complete">{localization.text.mardComplete}</option>
           </select>
         </div>
         <div className="palette-filter" aria-label="Palette groups">
@@ -234,23 +233,23 @@ export function RightPanel() {
 
     {rightTab === 'usage' && (
       <section className="panel-section panel-tab-body usage-section">
-        <h2>{text.usage}</h2>
+        <h2>{localization.text.usage}</h2>
         <div className="usage-overview">
           <div>
-            <span>{text.totalBeadsLabel}</span>
+            <span>{localization.text.totalBeadsLabel}</span>
             <strong>{totalBeads}</strong>
           </div>
           <div>
-            <span>{text.colorTypes}</span>
+            <span>{localization.text.colorTypes}</span>
             <strong>{usage.length}</strong>
           </div>
           <div>
-            <span>{text.estimatedPacks}</span>
+            <span>{localization.text.estimatedPacks}</span>
             <strong>{totalPacks}</strong>
           </div>
         </div>
         <label className="usage-pack-setting">
-          <span>{text.beadsPerPack}</span>
+          <span>{localization.text.beadsPerPack}</span>
           <div className="usage-pack-control">
             <div className="usage-pack-stepper">
               <button
@@ -274,13 +273,13 @@ export function RightPanel() {
                 +
               </button>
             </div>
-            <small>{text.perPackUnit}</small>
+            <small>{localization.text.perPackUnit}</small>
           </div>
         </label>
         <div className="usage-summary-card">
           <div className="usage-summary-head">
-            <strong>{text.countedLayerTitle}</strong>
-            <span>{text.countedLayers(countedLayers.length)}</span>
+            <strong>{localization.text.countedLayerTitle}</strong>
+            <span>{localization.text.countedLayers(countedLayers.length)}</span>
           </div>
           <div className="usage-layer-actions">
             <button
@@ -288,25 +287,24 @@ export function RightPanel() {
               className={countedLayers.length === layers.length ? 'active' : ''}
               onClick={() => updateUsageLayerSelection(new Set(layers.map((layer) => layer.id)))}
             >
-              {text.countAllLayers}
+              {localization.text.countAllLayers}
             </button>
             <button
               type="button"
               className={countedLayers.length === 1 && countedLayers[0]?.id === activeLayer.id ? 'active' : ''}
               onClick={() => updateUsageLayerSelection(new Set([activeLayer.id]))}
             >
-              {text.countCurrentLayer}
+              {localization.text.countCurrentLayer}
             </button>
           </div>
           <div className="usage-layer-chips">
             {layers.map((layer) => {
-              const isIncluded = layer.includeInUsage;
               return (
                 <button
                   key={layer.id}
                   type="button"
-                  className={isIncluded ? 'active' : ''}
-                  aria-pressed={isIncluded}
+                  className={layer.includeInUsage ? 'active' : ''}
+                  aria-pressed={layer.includeInUsage}
                   onClick={() => toggleUsageLayer(layer.id)}
                 >
                   {layerDisplayName(layer, layers.findIndex((item) => item.id === layer.id))}
@@ -314,18 +312,18 @@ export function RightPanel() {
               );
             })}
           </div>
-          {countedLayers.length === 0 && <div className="usage-no-layers">{text.noCountedLayers}</div>}
+          {countedLayers.length === 0 && <div className="usage-no-layers">{localization.text.noCountedLayers}</div>}
           {(usage.length > 32 || isolatedBeads > 0) && (
             <div className="usage-notes">
-              {usage.length > 32 && <span>{text.manyColors}</span>}
+              {usage.length > 32 && <span>{localization.text.manyColors}</span>}
               {isolatedBeads > 0 && (
                 <span className="usage-note-line">
-                  <span>{text.isolatedBeads(isolatedBeads)}</span>
+                  <span>{localization.text.isolatedBeads(isolatedBeads)}</span>
                   <button
                     className={showIsolatedBeads ? 'usage-note-eye active' : 'usage-note-eye'}
                     type="button"
-                    title={showIsolatedBeads ? text.hideIsolatedBeads : text.showIsolatedBeads}
-                    aria-label={showIsolatedBeads ? text.hideIsolatedBeads : text.showIsolatedBeads}
+                    title={showIsolatedBeads ? localization.text.hideIsolatedBeads : localization.text.showIsolatedBeads}
+                    aria-label={showIsolatedBeads ? localization.text.hideIsolatedBeads : localization.text.showIsolatedBeads}
                     aria-pressed={showIsolatedBeads}
                         onClick={() => setShowIsolatedBeads(!showIsolatedBeads)}
                   >
@@ -350,11 +348,11 @@ export function RightPanel() {
               </span>
               <span className="usage-count">
                 <strong>{row.count}</strong>
-                <small>{row.packs} {text.packUnit}</small>
+                <small>{row.packs} {localization.text.packUnit}</small>
               </span>
             </button>
           ))}
-          {usage.length === 0 && <div className="usage-empty">{text.noUsage}</div>}
+          {usage.length === 0 && <div className="usage-empty">{localization.text.noUsage}</div>}
         </div>
       </section>
     )}
@@ -366,10 +364,10 @@ export function RightPanel() {
     {rightTab === 'palette' && (
       <>
         <section className="panel-section view-section">
-          <h2>{text.view}</h2>
+          <h2>{localization.text.view}</h2>
         <div className="view-toggle-grid">
-          <div className="view-shape-toggle" aria-label={text.beadShape}>
-            <span>{text.beadShape}</span>
+          <div className="view-shape-toggle" aria-label={localization.text.beadShape}>
+            <span>{localization.text.beadShape}</span>
             <div>
               <button
                 type="button"
@@ -378,7 +376,7 @@ export function RightPanel() {
                 onClick={() => updateProject({ beadDisplayMode: 'bead' })}
               >
                 <span className="shape-choice-icon shape-choice-icon-round" aria-hidden="true" />
-                <span>{text.roundBeads}</span>
+                <span>{localization.text.roundBeads}</span>
               </button>
               <button
                 type="button"
@@ -387,7 +385,7 @@ export function RightPanel() {
                 onClick={() => updateProject({ beadDisplayMode: 'pixel' })}
               >
                 <span className="shape-choice-icon shape-choice-icon-square" aria-hidden="true" />
-                <span>{text.squareBeads}</span>
+                <span>{localization.text.squareBeads}</span>
               </button>
             </div>
           </div>
@@ -400,7 +398,7 @@ export function RightPanel() {
                   updateProject({ showGrid: event.target.checked })
                 }
               />
-              {text.grid}
+              {localization.text.grid}
             </label>
             <label className="checkline">
               <input
@@ -410,7 +408,7 @@ export function RightPanel() {
                   updateProject({ showCoordinates: event.target.checked })
                 }
               />
-              {text.coordinates}
+              {localization.text.coordinates}
             </label>
           </div>
           <div className="view-row">
@@ -422,7 +420,7 @@ export function RightPanel() {
                   updateProject({ showColorCodes: event.target.checked })
                 }
               />
-              {text.showColorCodes}
+              {localization.text.showColorCodes}
             </label>
             <label className="checkline">
               <input
@@ -432,7 +430,7 @@ export function RightPanel() {
                   updateProject({ showLayerOverlap: event.target.checked })
                 }
               />
-              {text.layerOverlap}
+              {localization.text.layerOverlap}
             </label>
           </div>
         </div>
@@ -450,13 +448,12 @@ function CellInfo() {
   useObservableState(localization.snapshot$);
   const view = useService(WorkspaceViewService);
   const hoverCell = useObservableState(view.hoverCell$);
-  const text = localization.text;
   return (
     <section className="panel-section hover-section">
-      <h2>{text.cell}</h2>
+      <h2>{localization.text.cell}</h2>
       <span>{hoverCell
-        ? `R${hoverCell.y + 1} C${hoverCell.x + 1} - ${getColor(hoverCell.colorId)?.primaryCode ?? text.empty}`
-        : text.hoverBoard}</span>
+        ? `R${hoverCell.y + 1} C${hoverCell.x + 1} - ${getColor(hoverCell.colorId)?.primaryCode ?? localization.text.empty}`
+        : localization.text.hoverBoard}</span>
     </section>
   );
 }

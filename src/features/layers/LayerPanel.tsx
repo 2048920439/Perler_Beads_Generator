@@ -23,15 +23,13 @@ export function LayerPanel() {
   const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
   const language = useObservableState(localization.snapshot$);
-  const text = localization.text;
   const { project } = useObservableState(projectService.snapshot$);
   const { layers, activeLayerId } = project;
-  const showActiveLayerOnly = project.settings.showActiveLayerOnly;
   const layerDisplayName = (layer: BeadLayer, index: number) => displayLayerName(layer, index, language);
   function layerMetaText(isActive: boolean, isVisible: boolean, isLocked: boolean, beadCount: number): string {
     return [
-      ...(isActive ? [text.activeLayer] : []), ...(!isVisible ? [text.hiddenLayer] : []),
-      ...(isLocked ? [text.lockedLayer] : []), text.layerBeadCount(beadCount),
+      ...(isActive ? [localization.text.activeLayer] : []), ...(!isVisible ? [localization.text.hiddenLayer] : []),
+      ...(isLocked ? [localization.text.lockedLayer] : []), localization.text.layerBeadCount(beadCount),
     ].join(' - ');
   }
   const onAddLayer = () => service.addLayer();
@@ -56,17 +54,17 @@ export function LayerPanel() {
   return (
     <section className="panel-section panel-tab-body layers-section">
       <div className="layers-header">
-        <h2>{text.layers}</h2>
-        <button onClick={onAddLayer}>{text.addLayer}</button>
+        <h2>{localization.text.layers}</h2>
+        <button onClick={onAddLayer}>{localization.text.addLayer}</button>
       </div>
       <button
-        className={showActiveLayerOnly ? 'layer-solo-toggle active' : 'layer-solo-toggle'}
+        className={project.settings.showActiveLayerOnly ? 'layer-solo-toggle active' : 'layer-solo-toggle'}
         type="button"
-        aria-pressed={showActiveLayerOnly}
+        aria-pressed={project.settings.showActiveLayerOnly}
         onClick={onToggleActiveLayerOnly}
       >
-        <EyeIcon visible={showActiveLayerOnly} />
-        <span>{text.showActiveLayerOnly}</span>
+        <EyeIcon visible={project.settings.showActiveLayerOnly} />
+        <span>{localization.text.showActiveLayerOnly}</span>
       </button>
       <div
         className="layer-list"
@@ -110,8 +108,8 @@ export function LayerPanel() {
               <button
                 className="layer-drag-handle"
                 draggable
-                title={text.reorderLayer}
-                aria-label={text.reorderLayer}
+                title={localization.text.reorderLayer}
+                aria-label={localization.text.reorderLayer}
                 onDragStart={(event) => {
                   event.dataTransfer.effectAllowed = 'move';
                   event.dataTransfer.setData('text/plain', layer.id);
@@ -130,8 +128,8 @@ export function LayerPanel() {
               </button>
               <button
                 className={layer.visible ? 'mini-icon-toggle visibility-toggle active' : 'mini-icon-toggle visibility-toggle'}
-                title={layer.visible ? text.eye : text.hiddenLayer}
-                aria-label={layer.visible ? text.eye : text.hiddenLayer}
+                title={layer.visible ? localization.text.eye : localization.text.hiddenLayer}
+                aria-label={layer.visible ? localization.text.eye : localization.text.hiddenLayer}
                 onClick={(event) => {
                   event.stopPropagation();
                   onUpdateLayer(layer.id, { visible: !layer.visible });
@@ -149,7 +147,7 @@ export function LayerPanel() {
                 >
                   <input
                     value={editingLayerName}
-                    aria-label={text.renameLayer}
+                    aria-label={localization.text.renameLayer}
                     autoFocus
                     onChange={(event) => setEditingLayerName(event.target.value)}
                     onBlur={() => saveEditingLayer(layer, layerIndex)}
@@ -168,7 +166,7 @@ export function LayerPanel() {
                       checked={layer.includeInUsage}
                       onChange={(event) => onUpdateLayer(layer.id, { includeInUsage: event.target.checked })}
                     />
-                    {text.countLayer}
+                    {localization.text.countLayer}
                   </label>
                 </form>
               ) : (
@@ -179,8 +177,8 @@ export function LayerPanel() {
                       <button
                         className="layer-rename-button"
                         type="button"
-                        title={text.renameLayer}
-                        aria-label={text.renameLayer}
+                        title={localization.text.renameLayer}
+                        aria-label={localization.text.renameLayer}
                         onClick={(event) => {
                           event.stopPropagation();
                           setEditingLayerId(layer.id);
@@ -198,23 +196,23 @@ export function LayerPanel() {
                       checked={layer.includeInUsage}
                       onChange={(event) => onUpdateLayer(layer.id, { includeInUsage: event.target.checked })}
                     />
-                    {text.countLayer}
+                    {localization.text.countLayer}
                   </label>
                 </div>
               )}
               <div className="layer-actions">
                 <button
                   className={layer.locked ? 'mini-icon-toggle active' : 'mini-icon-toggle'}
-                  aria-label={layer.locked ? text.unlock : text.lock}
-                  title={layer.locked ? text.unlockHint : text.lockHint}
+                  aria-label={layer.locked ? localization.text.unlock : localization.text.lock}
+                  title={layer.locked ? localization.text.unlockHint : localization.text.lockHint}
                   onClick={() => onUpdateLayer(layer.id, { locked: !layer.locked })}
                 >
                   <LockIcon locked={layer.locked} />
                 </button>
                 <button
                   className="mini-icon-toggle"
-                  aria-label={text.duplicateLayer}
-                  title={text.duplicateLayer}
+                  aria-label={localization.text.duplicateLayer}
+                  title={localization.text.duplicateLayer}
                   onClick={() => onDuplicateLayer(layer.id)}
                 >
                   <DuplicateIcon />
@@ -222,8 +220,8 @@ export function LayerPanel() {
                 <button
                   className="mini-icon-toggle danger"
                   disabled={layers.length <= 1}
-                  aria-label={text.deleteLayer}
-                  title={text.deleteLayer}
+                  aria-label={localization.text.deleteLayer}
+                  title={localization.text.deleteLayer}
                   onClick={() => onDeleteLayer(layer.id)}
                 >
                   <TrashIcon />
