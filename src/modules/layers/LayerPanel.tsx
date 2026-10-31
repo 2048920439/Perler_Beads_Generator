@@ -1,27 +1,14 @@
 import { useState } from 'react';
 import type { DragEvent } from 'react';
 import type { BeadLayer } from '@/common/types';
-import type { EditorText } from '@/config/localization';
 import { DragHandleIcon, DuplicateIcon, EyeIcon, LockIcon, PencilIcon, TrashIcon } from '@/common/ui/EditorIcons';
+import { useObservableState, useService } from '@/service-core';
+import { LayerService } from '@/services/layer-service';
+import { LocalizationService } from '@/services/localization-service';
+import { ProjectService } from '@/services/project-service';
+import { layerDisplayName as displayLayerName } from './layerLabels';
 
 type DragTarget = { id: string; edge: 'before' | 'after' };
-
-type Props = {
-  text: EditorText;
-  layers: BeadLayer[];
-  activeLayerId: string;
-  showActiveLayerOnly: boolean;
-  layerDisplayName: (layer: BeadLayer, index: number) => string;
-  layerMetaText: (isActive: boolean, isVisible: boolean, isLocked: boolean, beadCount: number) => string;
-  onAddLayer: () => void;
-  onToggleActiveLayerOnly: () => void;
-  onSelectLayer: (layerId: string) => void;
-  onUpdateLayer: (layerId: string, changes: Partial<BeadLayer>) => void;
-  onDuplicateLayer: (layerId: string) => void;
-  onDeleteLayer: (layerId: string) => void;
-  onMoveLayer: (sourceId: string, target: DragTarget) => void;
-  onSaveLayerName: (layer: BeadLayer, index: number, name: string) => void;
-};
 
 function dragTargetFromEvent(event: DragEvent<HTMLElement>, layerId: string): DragTarget {
   const bounds = event.currentTarget.getBoundingClientRect();
@@ -31,22 +18,30 @@ function dragTargetFromEvent(event: DragEvent<HTMLElement>, layerId: string): Dr
   };
 }
 
-export function LayerPanel({
-  text,
-  layers,
-  activeLayerId,
-  showActiveLayerOnly,
-  layerDisplayName,
-  layerMetaText,
-  onAddLayer,
-  onToggleActiveLayerOnly,
-  onSelectLayer,
-  onUpdateLayer,
-  onDuplicateLayer,
-  onDeleteLayer,
-  onMoveLayer,
-  onSaveLayerName,
-}: Props) {
+export function LayerPanel() {
+  const service = useService(LayerService);
+  const projectService = useService(ProjectService);
+  const localization = useService(LocalizationService);
+  const language = useObservableState(localization.snapshot$);
+  const text = localization.text;
+  const { project } = useObservableState(projectService.snapshot$);
+  const { layers, activeLayerId } = project;
+  const showActiveLayerOnly = project.settings.showActiveLayerOnly;
+  const layerDisplayName = (layer: BeadLayer, index: number) => displayLayerName(layer, index, language);
+  function layerMetaText(isActive: boolean, isVisible: boolean, isLocked: boolean, beadCount: number): string {
+    return [
+      ...(isActive ? [text.activeLayer] : []), ...(!isVisible ? [text.hiddenLayer] : []),
+      ...(isLocked ? [text.lockedLayer] : []), text.layerBeadCount(beadCount),
+    ].join(' - ');
+  }
+  const onAddLayer = () => service.addLayer();
+  const onToggleActiveLayerOnly = () => service.toggleActiveLayerOnly();
+  const onSelectLayer = (id: string) => service.selectLayer(id);
+  const onUpdateLayer = (id: string, changes: Partial<BeadLayer>) => service.updateLayer(id, changes);
+  const onDuplicateLayer = (id: string) => service.duplicateLayer(id);
+  const onDeleteLayer = (id: string) => service.deleteLayer(id);
+  const onMoveLayer = (id: string, target: DragTarget) => service.moveLayer(id, target);
+  const onSaveLayerName = (layer: BeadLayer, index: number, name: string) => service.renameLayer(layer, index, name);
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingLayerName, setEditingLayerName] = useState('');
   const [draggingLayerId, setDraggingLayerId] = useState<string | null>(null);

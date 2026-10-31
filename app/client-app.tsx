@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import App from '../src/App';
+import { ServiceProvider } from '../src/service-core';
 
 type ErrorBoundaryState = { error: Error | null };
 
@@ -31,7 +32,9 @@ export default function ClientApp() {
   return (
     <React.StrictMode>
       <AppErrorBoundary>
-        <App />
+        <ServiceProvider>
+          <App />
+        </ServiceProvider>
       </AppErrorBoundary>
     </React.StrictMode>
   );

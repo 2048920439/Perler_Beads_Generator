@@ -1,6 +1,17 @@
 import * as React from 'react';
 import { getColor } from '@/core/palette';
 import type { ArrowKind, BeadLayer, BeadProject, ClipboardPattern, CopyMode, MirrorDirection, MoveMode, RemoveMode, ShapeFillMode, ShapeKind, TextDirection, ToolId } from '@/common/types';
+import { useObservableState, useService } from '@/service-core';
+import { ToolService } from '@/services/tool-service';
+import { getDisplayProject } from '@/core/project';
+import { findIsolatedBeads } from '@/core/usage';
+import { ImageImportService } from '@/services/image-import-service';
+import { LocalizationService } from '@/services/localization-service';
+import { NoticeService } from '@/services/notice-service';
+import { PaletteService } from '@/services/palette-service';
+import { ProjectService } from '@/services/project-service';
+import { ReferenceImageService } from '@/services/reference-image-service';
+import { WorkspaceViewService } from '@/services/workspace-view-service';
 
 const { useEffect, useMemo, useRef, useState } = React;
 
@@ -35,97 +46,61 @@ type ReferenceImageRenderOptions = {
   placement: ReferenceImagePlacement;
 };
 
-type Props = {
-  project: BeadProject;
-  selectedColorId: string;
-  highlightedColorId: string | null;
-  highlightedCellIndices: number[];
-  formatColorCode?: (colorId: string) => string;
-  tool: ToolId;
-  eraserSize: number;
-  moveMode: MoveMode;
-  removeMode: RemoveMode;
-  mirrorMode: MoveMode;
-  mirrorDirection: MirrorDirection;
-  shapeKind: ShapeKind;
-  shapeFillMode: ShapeFillMode;
-  arrowKind: ArrowKind;
-  textToolValue: string;
-  textToolDirection: TextDirection;
-  textToolSize: number;
-  textToolSpacing: number;
-  onTextToolSizeChange: (size: number) => void;
-  referenceImageUrl: string | null;
-  referenceImageVisible: boolean;
-  referenceImageOpacity: number;
-  referenceImageScale: number;
-  referenceImageOffset: { x: number; y: number };
-  referenceImageAdjusting: boolean;
-  referenceImagePlacement: ReferenceImagePlacement;
-  referenceAdjustHint: string;
-  onReferenceOffsetChange: (offset: { x: number; y: number }) => void;
-  onReferenceScaleChange: (scale: number) => void;
-  clipboardPattern: ClipboardPattern | null;
-  copyMode: CopyMode;
-  copySelectionIndices: number[];
-  onCommitStart: () => void;
-  onCellsChange: (cells: Array<string | null>) => void;
-  onReplaceColor: (sourceColorId: string) => void;
-  onCopyPattern: (pattern: ClipboardPattern, switchToPaste?: boolean) => void;
-  onCopySelectionChange: (indices: number[], pattern: ClipboardPattern | null) => void;
-  onPastePattern: () => void;
-  onPickColor: (colorId: string) => void;
-  onHover: (cell: HoverCell | null) => void;
-  fitLabel: string;
-  canEdit: boolean;
-  lockedHint: string;
-};
+function formatColorCode(colorId: string): string { return getColor(colorId)?.primaryCode ?? ''; }
 
-export default function WorkspaceCanvas({
-  project,
-  selectedColorId,
-  highlightedColorId,
-  highlightedCellIndices,
-  formatColorCode,
-  tool,
-  eraserSize,
-  moveMode,
-  removeMode,
-  mirrorMode,
-  mirrorDirection,
-  shapeKind,
-  shapeFillMode,
-  arrowKind,
-  textToolValue,
-  textToolDirection,
-  textToolSize,
-  textToolSpacing,
-  onTextToolSizeChange,
-  referenceImageUrl,
-  referenceImageVisible,
-  referenceImageOpacity,
-  referenceImageScale,
-  referenceImageOffset,
-  referenceImageAdjusting,
-  referenceImagePlacement,
-  referenceAdjustHint,
-  onReferenceOffsetChange,
-  onReferenceScaleChange,
-  clipboardPattern,
-  copyMode,
-  copySelectionIndices,
-  onCommitStart,
-  onCellsChange,
-  onReplaceColor,
-  onCopyPattern,
-  onCopySelectionChange,
-  onPastePattern,
-  onPickColor,
-  onHover,
-  fitLabel,
-  canEdit,
-  lockedHint,
-}: Props) {
+export default function WorkspaceCanvas() {
+  const projectService = useService(ProjectService);
+  const localization = useService(LocalizationService);
+  const notice = useService(NoticeService);
+  const palette = useService(PaletteService);
+  const reference = useService(ReferenceImageService);
+  const images = useService(ImageImportService);
+  const view = useService(WorkspaceViewService);
+  useObservableState(localization.snapshot$);
+  const text = localization.text;
+  const { project: sourceProject } = useObservableState(projectService.snapshot$);
+  const project = useMemo(() => getDisplayProject(sourceProject), [sourceProject]);
+  const { selectedColorId } = useObservableState(palette.snapshot$);
+  const { highlightedColorId, showIsolatedBeads } = useObservableState(view.snapshot$);
+  const highlightedCellIndices = useMemo(
+    () => showIsolatedBeads ? [...new Set(findIsolatedBeads(sourceProject).map((item) => item.index))] : [],
+    [sourceProject, showIsolatedBeads],
+  );
+  const {
+    url: referenceImageUrl, opacity: referenceImageOpacity, scale: referenceImageScale,
+    offset: referenceImageOffset, placement: referenceImagePlacement, visible, adjusting,
+  } = useObservableState(reference.snapshot$);
+  const { isGenerating } = useObservableState(images.snapshot$);
+  const referenceImageVisible = visible && !isGenerating;
+  const referenceImageAdjusting = adjusting && referenceImageVisible;
+  const referenceAdjustHint = text.referenceAdjustHint;
+  const fitLabel = text.fit;
+  const canEdit = !projectService.activeLayer.locked;
+  const lockedHint = text.lockedCanvasHint;
+  const toolService = useService(ToolService);
+  const toolState = useObservableState(toolService.snapshot$);
+  const {
+    tool, eraserSize, moveMode, removeMode, mirrorMode, mirrorDirection, shapeKind, shapeFillMode, arrowKind,
+    textToolValue, textToolDirection, textToolSize, textToolSpacing, clipboardPattern, copyMode, copySelectionIndices,
+  } = toolState;
+  const onReferenceOffsetChange = (offset: { x: number; y: number }) => reference.update({ offset });
+  const onReferenceScaleChange = (scale: number) => reference.update({ scale });
+  const onCommitStart = () => { toolService.closeOptions(true); projectService.commitHistory(); };
+  const onCellsChange = (cells: Array<string | null>) => projectService.updateCells(cells);
+  const onReplaceColor = (sourceColorId: string) => {
+    const changed = projectService.replaceColor(sourceColorId, palette.snapshot.selectedColorId);
+    if (changed) notice.show(localization.text.recoloredBeads(changed));
+  };
+  const onCopyPattern = (pattern: ClipboardPattern, switchToPaste = true) => toolService.copyPattern(pattern, switchToPaste);
+  const onCopySelectionChange = (indices: number[], pattern: ClipboardPattern | null) => toolService.updateCopySelection(indices, pattern);
+  const onPastePattern = () => notice.show(localization.text.pastedPattern);
+  const onPickColor = (colorId: string) => {
+    palette.selectColor(colorId);
+    toolService.setTool('pencil');
+    toolService.closeOptions();
+    notice.show(localization.language === 'zh' ? '已从画布拾取颜色。' : 'Color picked from canvas.');
+  };
+  const onHover = (cell: HoverCell | null) => view.setHoverCell(cell);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const draftCellsRef = useRef<Array<string | null>>(getActiveLayerCells(project));
@@ -235,7 +210,7 @@ export default function WorkspaceCanvas({
     canvas.style.height = `${wrapper.clientHeight}px`;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawPattern(context, project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode);
-  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode]);
+  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing]);
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
@@ -259,7 +234,7 @@ export default function WorkspaceCanvas({
     });
     if (wrapperRef.current) observer.observe(wrapperRef.current);
     return () => observer.disconnect();
-  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode]);
+  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     const point = canvasToGridPoint(event.clientX, event.clientY);
@@ -595,7 +570,7 @@ export default function WorkspaceCanvas({
     event.preventDefault();
     if (tool === 'text') {
       const nextSize = Math.min(72, Math.max(5, textToolSize + (event.deltaY > 0 ? -1 : 1)));
-      if (nextSize !== textToolSize) onTextToolSizeChange(nextSize);
+      if (nextSize !== textToolSize) toolService.setTextToolSize(nextSize);
       return;
     }
     if (referenceImageAdjusting && referenceImageVisible) {

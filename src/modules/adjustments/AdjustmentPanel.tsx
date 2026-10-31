@@ -1,39 +1,28 @@
-import type { EditorText } from '@/config/localization';
 import type { AdjustmentSettings, LayerEffect } from './colorOperations';
-import type { BeadLayer } from '@/common/types';
 import { hasAdjustments } from './colorOperations';
+import { useObservableState, useService } from '@/service-core';
+import { AdjustmentService } from '@/services/adjustment-service';
+import { LocalizationService } from '@/services/localization-service';
+import { ProjectService } from '@/services/project-service';
+import { layerDisplayName } from '@/modules/layers/layerLabels';
 
-type Props = {
-  text: EditorText;
-  activeLayer: BeadLayer;
-  activeLayerName: string;
-  adjustments: AdjustmentSettings;
-  colorCleanupStrength: number;
-  layerColorLimit: number;
-  onAdjustmentChange: (key: keyof AdjustmentSettings, value: number) => void;
-  onReset: () => void;
-  onApplyEffect: (effect: LayerEffect, label: string) => void;
-  onColorCleanupStrengthChange: (value: number) => void;
-  onApplyColorCleanup: () => void;
-  onLayerColorLimitChange: (value: number) => void;
-  onApplyLayerColorLimit: () => void;
-};
-
-export function AdjustmentPanel({
-  text,
-  activeLayer,
-  activeLayerName,
-  adjustments,
-  colorCleanupStrength,
-  layerColorLimit,
-  onAdjustmentChange,
-  onReset,
-  onApplyEffect,
-  onColorCleanupStrengthChange,
-  onApplyColorCleanup,
-  onLayerColorLimitChange,
-  onApplyLayerColorLimit,
-}: Props) {
+export function AdjustmentPanel() {
+  const service = useService(AdjustmentService);
+  const projectService = useService(ProjectService);
+  const localization = useService(LocalizationService);
+  const language = useObservableState(localization.snapshot$);
+  const text = localization.text;
+  const { project } = useObservableState(projectService.snapshot$);
+  const activeLayer = projectService.activeLayer;
+  const activeLayerName = layerDisplayName(activeLayer, project.layers.findIndex((layer) => layer.id === activeLayer.id), language);
+  const { adjustments, colorCleanupStrength, layerColorLimit } = useObservableState(service.snapshot$);
+  const onAdjustmentChange = (key: keyof AdjustmentSettings, value: number) => service.setAdjustment(key, value);
+  const onReset = () => service.reset();
+  const onApplyEffect = (effect: LayerEffect, label: string) => service.applyEffect(effect, label);
+  const onColorCleanupStrengthChange = (value: number) => service.setColorCleanupStrength(value);
+  const onApplyColorCleanup = () => service.cleanup();
+  const onLayerColorLimitChange = (value: number) => service.setLayerColorLimit(value);
+  const onApplyLayerColorLimit = () => service.limitColors();
   return (
     <section className="panel-section panel-tab-body adjustment-section">
       <div className="adjustment-header">

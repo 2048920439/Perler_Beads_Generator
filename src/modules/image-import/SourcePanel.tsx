@@ -1,76 +1,67 @@
 import * as React from 'react';
 import ThreePreview from '@/presentation/preview/ThreePreview';
-import type { BeadProject, BackgroundMode, GenerationStyle } from '@/common/types';
-import type { EditorText, Language } from '@/config/localization';
+import type { BackgroundMode, GenerationStyle } from '@/common/types';
+import { getDisplayProject } from '@/core/project';
+import { summarizeUsage } from '@/core/usage';
+import { ImageGridEditor } from '@/presentation/canvas/ImageGridEditor';
+import { useObservableState, useService } from '@/service-core';
+import { ImageImportService } from '@/services/image-import-service';
+import { LocalizationService } from '@/services/localization-service';
+import { ProjectService } from '@/services/project-service';
+import { ReferenceImageService } from '@/services/reference-image-service';
 
-type Props = {
-  text: EditorText;
-  language: Language;
-  totalBeads: number;
-  displayProject: BeadProject;
-  pendingFile: File | null;
-  pendingImageUrl: string | null;
-  isGenerating: boolean;
-  convertWidth: number;
-  maxColors: number;
-  tolerance: number;
-  generationStyle: GenerationStyle;
-  backgroundMode: BackgroundMode;
-  referenceFile: File | null;
-  referenceImageUrl: string | null;
-  referenceVisible: boolean;
-  referenceOpacity: number;
-  referenceAdjusting: boolean;
-  referencePlacement: 'below' | 'above';
-  imageHelpProps: (tooltip: string) => React.HTMLAttributes<HTMLElement> & { 'data-tooltip': string };
-  onChooseImage: () => void;
-  onChooseReference: () => void;
-  onConvertWidthChange: (value: number) => void;
-  onMaxColorsChange: (value: number) => void;
-  onToleranceChange: (value: number) => void;
-  onGenerationStyleChange: (value: GenerationStyle) => void;
-  onBackgroundModeChange: (value: BackgroundMode) => void;
-  onReferenceVisibleChange: (value: boolean) => void;
-  onReferenceOpacityChange: (value: number) => void;
-  onReferenceAdjustingChange: (value: boolean) => void;
-  onReferencePlacementChange: (value: 'below' | 'above') => void;
-  onResetReferenceTransform: () => void;
-};
-
-export function SourcePanel({
-  text,
-  language,
-  totalBeads,
-  displayProject,
-  pendingFile,
-  pendingImageUrl,
-  isGenerating,
-  convertWidth,
-  maxColors,
-  tolerance,
-  generationStyle,
-  backgroundMode,
-  referenceFile,
-  referenceImageUrl,
-  referenceVisible,
-  referenceOpacity,
-  referenceAdjusting,
-  referencePlacement,
-  imageHelpProps,
-  onChooseImage,
-  onChooseReference,
-  onConvertWidthChange,
-  onMaxColorsChange,
-  onToleranceChange,
-  onGenerationStyleChange,
-  onBackgroundModeChange,
-  onReferenceVisibleChange,
-  onReferenceOpacityChange,
-  onReferenceAdjustingChange,
-  onReferencePlacementChange,
-  onResetReferenceTransform,
-}: Props) {
+export function SourcePanel() {
+  const images = useService(ImageImportService);
+  const reference = useService(ReferenceImageService);
+  const localization = useService(LocalizationService);
+  const projectService = useService(ProjectService);
+  const language = useObservableState(localization.snapshot$);
+  const text = localization.text;
+  const { project } = useObservableState(projectService.snapshot$);
+  const { pendingFile, pendingImageUrl, isGenerating, convertWidth, maxColors, tolerance, generationStyle, backgroundMode, showGridEditor } = useObservableState(images.snapshot$);
+  const { file: referenceFile, url: referenceImageUrl, visible: referenceVisible, opacity: referenceOpacity, adjusting: referenceAdjusting, placement: referencePlacement } = useObservableState(reference.snapshot$);
+  const displayProject = React.useMemo(() => getDisplayProject(project), [project]);
+  const totalBeads = React.useMemo(() => summarizeUsage(project).reduce((sum, row) => sum + row.count, 0), [project]);
+  const fileInput = React.useRef<HTMLInputElement>(null);
+  const referenceInput = React.useRef<HTMLInputElement>(null);
+  const [floatingHelp, setFloatingHelp] = React.useState<{ text: string; left: number; top: number } | null>(null);
+  function imageHelpProps(tooltip: string) {
+    function show(anchor: HTMLElement) {
+      const rect = anchor.getBoundingClientRect();
+      setFloatingHelp({ text: tooltip, left: Math.min(rect.right + 8, window.innerWidth - 182), top: rect.top + rect.height / 2 });
+    }
+    return {
+      'data-tooltip': tooltip, 'aria-label': tooltip, tabIndex: 0,
+      onMouseEnter: (event: React.MouseEvent<HTMLElement>) => show(event.currentTarget),
+      onMouseLeave: () => setFloatingHelp(null),
+      onFocus: (event: React.FocusEvent<HTMLElement>) => show(event.currentTarget),
+      onBlur: () => setFloatingHelp(null),
+    };
+  }
+  const onChooseImage = () => fileInput.current?.click();
+  const onChooseReference = () => referenceInput.current?.click();
+  const onConvertWidthChange = (value: number) => images.updateSettings({ convertWidth: value });
+  const onMaxColorsChange = (value: number) => images.updateSettings({ maxColors: value });
+  const onToleranceChange = (value: number) => images.updateSettings({ tolerance: value });
+  const onGenerationStyleChange = (value: GenerationStyle) => images.updateSettings({ generationStyle: value });
+  const onBackgroundModeChange = (value: BackgroundMode) => images.updateSettings({ backgroundMode: value });
+  const onReferenceVisibleChange = (value: boolean) => reference.update({ visible: value });
+  const onReferenceOpacityChange = (value: number) => reference.update({ opacity: value });
+  const onReferenceAdjustingChange = (value: boolean) => reference.update({ adjusting: value });
+  const onReferencePlacementChange = (value: 'below' | 'above') => reference.update({ placement: value });
+  const onResetReferenceTransform = () => reference.resetTransform();
   return (
+    <>
+      <input ref={fileInput} className="hidden-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+        const file = event.currentTarget.files?.[0];
+        if (file) images.openImage(file);
+        event.currentTarget.value = '';
+      }} />
+      <input ref={referenceInput} className="hidden-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+        const file = event.currentTarget.files?.[0];
+        if (file) reference.load(file);
+        event.currentTarget.value = '';
+      }} />
     <aside className="left-panel">
       <section className="left-card preview-card">
         <div className="left-card-header">
@@ -252,5 +243,20 @@ export function SourcePanel({
         </div>
       </section>
     </aside>
+      {showGridEditor && pendingFile && (
+        <ImageGridEditor
+          file={pendingFile}
+          initialWidth={convertWidth}
+          language={language}
+          onCancel={() => images.closeGridEditor()}
+          onConfirm={(width, height, corners) => { void images.generate(width, height, corners); }}
+        />
+      )}
+      {floatingHelp && (
+        <div className="floating-help-tooltip" style={{ left: floatingHelp.left, top: floatingHelp.top }}>
+          {floatingHelp.text}
+        </div>
+      )}
+    </>
   );
 }

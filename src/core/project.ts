@@ -103,6 +103,22 @@ export function composeVisibleCells(layers: BeadLayer[], width: number, height: 
   return result;
 }
 
+export function getDisplayProject(project: BeadProject): BeadProject {
+  if (!project.settings.showActiveLayerOnly) return project;
+  const layers = project.layers.map((layer) => ({ ...layer, visible: layer.id === project.activeLayerId }));
+  return { ...project, layers, cells: composeVisibleCells(layers, project.width, project.height) };
+}
+
+export function resizeCells(
+  cells: Array<string | null>, oldWidth: number, oldHeight: number, width: number, height: number,
+): Array<string | null> {
+  const next = Array.from({ length: width * height }, () => null as string | null);
+  for (let y = 0; y < Math.min(oldHeight, height); y += 1) {
+    for (let x = 0; x < Math.min(oldWidth, width); x += 1) next[y * width + x] = cells[y * oldWidth + x] ?? null;
+  }
+  return next;
+}
+
 export function normalizeProject(project: BeadProject): BeadProject {
   const width = Number.isFinite(project.width) ? project.width : 29;
   const height = Number.isFinite(project.height) ? project.height : 29;
