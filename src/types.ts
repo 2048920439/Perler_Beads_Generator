@@ -86,6 +86,8 @@ export type GenerationStyle = 'cartoon' | 'realistic';
 
 export type ConvertOptions = {
   width: number;
+  height?: number;
+  gridCorners?: [{ x: number; y: number }, { x: number; y: number }, { x: number; y: number }, { x: number; y: number }];
   maxColors: number;
   palette?: PaletteColor[];
   backgroundMode: BackgroundMode;

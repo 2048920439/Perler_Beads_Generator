@@ -4,6 +4,7 @@ import ThreePreview from './ThreePreview';
 import { downloadPrintPdf, downloadPrintPng, downloadProjectJson, downloadUsageWorkbook } from './exporters';
 import type { PrintExportOptions } from './exporters';
 import { imageFileToBeads } from './imageToBeads';
+import { ImageGridEditor, type GridCorners } from './ImageGridEditor';
 import { basicPalette, colorDistance, completePalette, getColor, nearestPaletteColor } from './palette';
 import { composeVisibleCells, createLayer, createProject, loadDraft, normalizeProject, parseProjectJson, saveDraft, withCells, withLayers } from './project';
 import { findIsolatedBeads, summarizeUsage } from './usage';
@@ -508,7 +509,6 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
-  const autoGenerateShouldCommitRef = useRef(false);
   const generationRequestRef = useRef(0);
   const adjustmentSessionRef = useRef<{ layerId: string | null; baseCells: Array<string | null> }>({ layerId: null, baseCells: [] });
   const soloVisibilitySnapshotRef = useRef<Record<string, boolean> | null>(null);
@@ -552,6 +552,7 @@ export default function App() {
   const [copyMode, setCopyMode] = useState<CopyMode>('connected');
   const [copySelectionIndices, setCopySelectionIndices] = useState<number[]>([]);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showImageGridEditor, setShowImageGridEditor] = useState(false);
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
@@ -764,16 +765,6 @@ export default function App() {
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
   }, []);
-
-  useEffect(() => {
-    if (!pendingFile) return;
-    const timer = window.setTimeout(() => {
-      const shouldCommit = autoGenerateShouldCommitRef.current;
-      autoGenerateShouldCommitRef.current = false;
-      void generateFromImage({ recordHistory: shouldCommit, automatic: true });
-    }, 420);
-    return () => window.clearTimeout(timer);
-  }, [pendingFile, convertWidth, maxColors, generationStyle, backgroundMode, tolerance, paletteMode]);
 
   function commitHistory() {
     setPast((items) => [...items.slice(-39), project]);
@@ -1035,7 +1026,7 @@ export default function App() {
       return URL.createObjectURL(file);
     });
     resetReferenceTransform();
-    autoGenerateShouldCommitRef.current = true;
+    setShowImageGridEditor(true);
     setNotice(language === 'zh' ? `正在生成 ${file.name}...` : `Generating ${file.name}...`);
   }
 
@@ -1054,7 +1045,7 @@ export default function App() {
     setNotice(language === 'zh' ? `${file.name} 已设为参考图。` : `${file.name} set as reference image.`);
   }
 
-  async function generateFromImage(options: { recordHistory?: boolean; automatic?: boolean } = {}) {
+  async function generateFromImage(width: number, height: number, corners: GridCorners) {
     if (!pendingFile) return;
     if (activeLayer.locked) {
       setNotice(text.lockedCanvasHint);
@@ -1069,7 +1060,9 @@ export default function App() {
     setNotice(language === 'zh' ? '正在本地更新拼豆图案...' : 'Updating bead pattern locally...');
     try {
       const result = await imageFileToBeads(pendingFile, {
-        width: convertWidth,
+        width,
+        height,
+        gridCorners: corners,
         maxColors,
         palette: activePalette,
         generationStyle,
@@ -1079,7 +1072,7 @@ export default function App() {
         speckleReduction: defaultImportSettings.speckleReduction,
       });
       if (requestId !== generationRequestRef.current) return;
-      if (options.recordHistory) commitHistory();
+      commitHistory();
       const nextWidth = Math.max(sourceProject.width, result.width);
       const nextHeight = Math.max(sourceProject.height, result.height);
       const nextLayers = sourceLayers.map((layer) => {
@@ -2840,6 +2833,18 @@ export default function App() {
           </>
         )}
       </aside>
+      {showImageGridEditor && pendingFile && (
+        <ImageGridEditor
+          file={pendingFile}
+          initialWidth={convertWidth}
+          language={language}
+          onCancel={() => setShowImageGridEditor(false)}
+          onConfirm={(width, height, corners) => {
+            setShowImageGridEditor(false);
+            void generateFromImage(width, height, corners);
+          }}
+        />
+      )}
       {floatingHelp && (
         <div className="floating-help-tooltip" style={{ left: floatingHelp.left, top: floatingHelp.top }}>
           {floatingHelp.text}

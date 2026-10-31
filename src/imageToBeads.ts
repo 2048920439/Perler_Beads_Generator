@@ -41,7 +41,7 @@ const styleProfiles: Record<GenerationStyle, StyleProfile> = {
 export async function imageFileToBeads(file: File, options: ConvertOptions): Promise<ConvertResult> {
   const image = await loadImage(file);
   const width = Math.max(1, Math.round(options.width));
-  const height = Math.max(1, Math.round((image.naturalHeight / image.naturalWidth) * width));
+  const height = Math.max(1, Math.round(options.height ?? (image.naturalHeight / image.naturalWidth) * width));
   const sourceWidth = Math.max(1, image.naturalWidth);
   const sourceHeight = Math.max(1, image.naturalHeight);
   const canvas = document.createElement('canvas');
@@ -109,13 +109,15 @@ function sampleGridCells(
 
       for (let sy = 0; sy < profile.sampleSide; sy += 1) {
         for (let sx = 0; sx < profile.sampleSide; sx += 1) {
+          const uv = { x: (x + (sx + 0.5) / profile.sampleSide) / width, y: (y + (sy + 0.5) / profile.sampleSide) / height };
+          const mapped = options.gridCorners ? mapGridPoint(options.gridCorners, uv.x, uv.y) : { x: uv.x, y: uv.y };
           const sourceX = Math.min(
             sourceWidth - 1,
-            Math.max(0, Math.floor(((x + (sx + 0.5) / profile.sampleSide) / width) * sourceWidth)),
+            Math.max(0, Math.floor(mapped.x * sourceWidth)),
           );
           const sourceY = Math.min(
             sourceHeight - 1,
-            Math.max(0, Math.floor(((y + (sy + 0.5) / profile.sampleSide) / height) * sourceHeight)),
+            Math.max(0, Math.floor(mapped.y * sourceHeight)),
           );
           const index = (sourceY * sourceWidth + sourceX) * 4;
           const alpha = data[index + 3];
@@ -143,6 +145,18 @@ function sampleGridCells(
     }
   }
   return cells;
+}
+
+function mapGridPoint(
+  points: NonNullable<ConvertOptions['gridCorners']>,
+  u: number,
+  v: number,
+): { x: number; y: number } {
+  const left = Math.min(...points.map((point) => point.x));
+  const right = Math.max(...points.map((point) => point.x));
+  const top = Math.min(...points.map((point) => point.y));
+  const bottom = Math.max(...points.map((point) => point.y));
+  return { x: left + (right - left) * u, y: top + (bottom - top) * v };
 }
 
 function rankPaletteColors(
