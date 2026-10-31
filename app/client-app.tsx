@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import App from '../src/App';
+import App from '../src/presentation/App';
 import { ServiceProvider } from '../src/service-core';
 
 type ErrorBoundaryState = { error: Error | null };

@@ -95,32 +95,20 @@ docs/
   cartoon-source.png      # 卡通风格原图
   blank-workspace.png     # 空白工作区预览
 
-scripts/
-  clean-dist.cjs          # 清理 generated/dist
-  post-build.cjs          # 拷贝样式和 vendor 文件，修正构建产物引用
-  write-html.cjs          # 写入 GitHub Pages 使用的静态 HTML
-  dev-server.cjs          # 本地静态预览服务
+app/
+  layout.tsx              # Next.js 根布局
+  page.tsx                # Next.js 页面入口
+  client-app.tsx          # 客户端服务容器和应用挂载
 
 src/
-  App.tsx                 # 应用状态、布局、顶部栏、左右面板和主要交互
-  WorkspaceCanvas.tsx     # 2D 画布、绘制工具、参考图、复制、移动和文字逻辑
-  ThreePreview.tsx        # 3D 拼豆预览
-  imageToBeads.ts         # 图片转拼豆图纸算法
-  palette.ts              # MARD 色卡、色号分组和颜色匹配
-  project.ts              # 项目数据、图层、自动保存和兼容导入
-  exporters.ts            # PNG / PDF 图纸、Excel 用量和 JSON 编辑记录导出
-  usage.ts                # 用量统计和无相邻拼豆检测
-  types.ts                # 共享类型定义
+  presentation/           # 页面组合和布局
+  features/               # 按功能组织的业务组件
+  core/                   # 领域逻辑
+  services/               # 状态和业务流程
   styles.css              # 全局样式
-  main.tsx                # React 入口
 
-generated/
-  .gitkeep                # 保留目录；构建产物和本地缓存会被忽略
-
-index.html                # 开发入口 HTML
 package.json              # 项目脚本和依赖
 tsconfig.json             # TypeScript 配置
-tsconfig.build.json       # 构建输出配置
 ```
 
 ## 技术栈
@@ -249,32 +237,20 @@ docs/
   cartoon-source.png      # Cartoon source image
   blank-workspace.png     # Blank workspace preview
 
-scripts/
-  clean-dist.cjs          # Legacy helper; not used by the Next.js build
-  post-build.cjs          # Legacy helper; not used by the Next.js build
-  write-html.cjs          # Legacy helper; not used by the Next.js build
-  dev-server.cjs          # Legacy helper; not used by Next.js development
+app/
+  layout.tsx              # Next.js root layout
+  page.tsx                # Next.js route entry
+  client-app.tsx          # Client-side service provider and application mount
 
 src/
-  App.tsx                 # App state, layout, panels, and main interactions
-  WorkspaceCanvas.tsx     # 2D editor canvas, tools, reference image, copy/move/text logic
-  ThreePreview.tsx        # 3D bead preview
-  imageToBeads.ts         # Image-to-bead conversion algorithm
-  palette.ts              # MARD palettes, groups, and color matching
-  project.ts              # Project data, layers, autosave, and import compatibility
-  exporters.ts            # PNG / PDF pattern, Excel usage, and JSON export
-  usage.ts                # Usage summary and isolated bead detection
-  types.ts                # Shared TypeScript types
+  presentation/           # Page composition and layout
+  features/               # Feature-oriented business components
+  core/                   # Domain logic
+  services/               # State and business orchestration
   styles.css              # Global styles
-  main.tsx                # React entry
 
-generated/
-  .gitkeep                # Placeholder for the legacy build output directory
-
-index.html                # Legacy static entry; Next.js starts from app/
 package.json              # Scripts and dependencies
 tsconfig.json             # TypeScript config
-tsconfig.build.json       # Build output config
 ```
 
 ## Stack

@@ -18,16 +18,14 @@ src/
 │  ├─ palette.ts
 │  ├─ project.ts
 │  └─ usage.ts
-├─ modules/                # Business capabilities
+├─ features/               # Business capabilities
 │  ├─ adjustments/
 │  ├─ editor/
 │  ├─ image-import/
 │  └─ layers/
 ├─ presentation/           # Page composition and rendering integrations
-│  ├─ canvas/
-│  ├─ preview/
-│  └─ App.tsx
-├─ App.tsx                 # Compatibility facade for existing entry points
+│  ├─ App.tsx
+│  └─ SourcePanel.tsx
 └─ styles.css
 ```
 
@@ -61,18 +59,17 @@ See [RXJS_SERVICE_ARCHITECTURE.md](RXJS_SERVICE_ARCHITECTURE.md) for service own
 The intended direction is:
 
 ```text
-presentation -> modules -> core
+presentation -> features -> core
 presentation -> common/config
-modules      -> core/common/config
+features     -> core/common/config
 core         -> common
-common       -> no business modules
+common       -> no business features
 ```
 
 `core` modules should stay independent from React rendering. Browser APIs are
 kept at explicit boundaries such as persistence, image processing, export,
 Canvas, and Three.js adapters.
 
-`app/client-app.tsx` remains the Next.js client boundary. It imports the
-compatibility facade in `src/App.tsx`, which re-exports the page composition
-from `src/presentation/App.tsx`. This preserves existing entry points while
-allowing the actual application composition to live in the presentation layer.
+`app/client-app.tsx` is the single client entry boundary. It mounts the service
+provider and imports the page composition directly from
+`src/presentation/App.tsx`.

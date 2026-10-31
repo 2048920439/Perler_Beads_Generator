@@ -5,7 +5,7 @@
 - This is a browser-side Perler bead pattern editor built with Next.js App Router, React, TypeScript, Canvas 2D, and Three.js.
 - The Next.js entry points live in `app/`. The editor and domain logic live in `src/`.
 - Image processing and project data stay in the browser. Do not add uploads, analytics, or external services without an explicit product requirement.
-- `scripts/` contains legacy static-build helpers. The supported development and deployment path is the Next.js commands in `package.json` and `.github/workflows/`.
+- The supported development and deployment path is the Next.js commands in `package.json` and `.github/workflows/`.
 
 ## Working Rules
 
