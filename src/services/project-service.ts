@@ -2,7 +2,7 @@ import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map } f
 
 import type { BeadProject, ProjectSettings } from '@/common/types';
 import { composeVisibleCells, createProject, loadDraft, resizeCells, saveDraft, withCells, withLayers } from '@/core/project';
-import { clampInteger } from '@/modules/adjustments/colorOperations';
+import { clampInteger } from '@/features/adjustments/colorOperations';
 import { BaseService } from '@/service-core/base-service';
 
 export type ProjectSnapshot = {

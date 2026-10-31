@@ -4,7 +4,7 @@ import { useObservableState, useService } from '@/service-core';
 import { AdjustmentService } from '@/services/adjustment-service';
 import { LocalizationService } from '@/services/localization-service';
 import { ProjectService } from '@/services/project-service';
-import { layerDisplayName } from '@/modules/layers/layerLabels';
+import { layerDisplayName } from '@/features/layers/layerLabels';
 
 export function AdjustmentPanel() {
   const service = useService(AdjustmentService);

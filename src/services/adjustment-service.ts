@@ -7,7 +7,7 @@ import {
   mergeCloseLayerColors,
   type AdjustmentSettings,
   type LayerEffect,
-} from '@/modules/adjustments/colorOperations';
+} from '@/features/adjustments/colorOperations';
 import { withLayers } from '@/core/project';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';

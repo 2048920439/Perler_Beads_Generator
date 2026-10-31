@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sizePresets } from '@/config/editor';
 import { GitHubIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon } from '@/common/ui/EditorIcons';
-import { PrintExportMenu } from '@/modules/export/PrintExportMenu';
+import { PrintExportMenu } from '@/features/export/PrintExportMenu';
 import type { PrintExportOptions } from '@/core/export/exporters';
 import { summarizeUsage } from '@/core/usage';
 import { useObservableState, useService } from '@/service-core';

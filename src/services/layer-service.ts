@@ -1,8 +1,8 @@
 import type { BeadLayer, BeadProject } from '@/common/types';
 import { composeVisibleCells, createLayer, withLayers } from '@/core/project';
 import { distinctUntilChanged, map } from 'rxjs';
-import { clampInteger } from '@/modules/adjustments/colorOperations';
-import { layerDisplayName } from '@/modules/layers/layerLabels';
+import { clampInteger } from '@/features/adjustments/colorOperations';
+import { layerDisplayName } from '@/features/layers/layerLabels';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';
 import { LocalizationService } from './localization-service';

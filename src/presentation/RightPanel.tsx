@@ -4,8 +4,8 @@ import { getColor } from '@/core/palette';
 import { createProject } from '@/core/project';
 import { findIsolatedBeads, summarizeUsage } from '@/core/usage';
 import { EyeIcon } from '@/common/ui/EditorIcons';
-import { LayerPanel } from '@/modules/layers/LayerPanel';
-import { AdjustmentPanel } from '@/modules/adjustments/AdjustmentPanel';
+import { LayerPanel } from '@/features/layers/LayerPanel';
+import { AdjustmentPanel } from '@/features/adjustments/AdjustmentPanel';
 import { useObservableState, useService } from '@/service-core';
 import { LayerService } from '@/services/layer-service';
 import { ProjectService } from '@/services/project-service';
@@ -14,7 +14,7 @@ import { NoticeService } from '@/services/notice-service';
 import { PaletteService, type PaletteMode } from '@/services/palette-service';
 import { ToolService } from '@/services/tool-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
-import { layerDisplayName as displayLayerName } from '@/modules/layers/layerLabels';
+import { layerDisplayName as displayLayerName } from '@/features/layers/layerLabels';
 
 type RightTab = 'palette' | 'layers' | 'usage' | 'adjustments';
 export function RightPanel() {

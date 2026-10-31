@@ -1,7 +1,7 @@
 import { tools } from '@/config/editor';
 import { ArrowOptionIcon, ResetIcon, ShapeOptionIcon, ToolIcon } from '@/common/ui/EditorIcons';
 import type { CopyMode, MoveMode, RemoveMode, RightClickAction, ShapeFillMode, ShapeKind, TextDirection, ToolId, ArrowKind, MirrorDirection } from '@/common/types';
-import { ClipboardPreview } from '@/modules/editor/ClipboardPreview';
+import { ClipboardPreview } from '@/features/editor/ClipboardPreview';
 import { useObservableState, useService } from '@/service-core';
 import { ProjectService } from '@/services/project-service';
 import { ToolService } from '@/services/tool-service';

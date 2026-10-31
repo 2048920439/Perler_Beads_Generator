@@ -1,9 +1,9 @@
 import * as React from 'react';
-import ThreePreview from '@/presentation/preview/ThreePreview';
+import ThreePreview from '@/features/editor/ThreePreview';
 import type { BackgroundMode, GenerationStyle } from '@/common/types';
 import { getDisplayProject } from '@/core/project';
 import { summarizeUsage } from '@/core/usage';
-import { ImageGridEditor } from '@/presentation/canvas/ImageGridEditor';
+import { ImageGridEditor } from '@/features/image-import/ImageGridEditor';
 import { useObservableState, useService } from '@/service-core';
 import { ImageImportService } from '@/services/image-import-service';
 import { LocalizationService } from '@/services/localization-service';
