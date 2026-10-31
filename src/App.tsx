@@ -69,6 +69,7 @@ const ui: Record<Language, any> = {
         referenceBelow: '拼豆下方',
         referenceAbove: '拼豆上方',
         referenceHint: '作为临摹底稿',
+        referenceShortcutHint: '快捷键 O：单击切换，长按临时显示',
         ready: '已选择',
         noImage: '未选择图片',
         uploadImage: '上传图片',
@@ -282,6 +283,7 @@ const ui: Record<Language, any> = {
         referenceBelow: 'Below beads',
         referenceAbove: 'Above beads',
         referenceHint: 'Tracing guide',
+        referenceShortcutHint: 'Shortcut O: click to toggle, hold to preview',
         ready: 'Ready',
         noImage: 'No image',
         uploadImage: 'Upload image',
@@ -461,6 +463,9 @@ const tools: Array<{ id: ToolId; shortcut: string }> = [
   { id: 'pan', shortcut: 'H' },
 ];
 
+const referenceShortcut = 'KeyO';
+const referenceLongPressDelay = 350;
+
 function formatBrushSize(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
@@ -562,6 +567,16 @@ export default function App() {
   const [referenceOffset, setReferenceOffset] = useState({ x: 0, y: 0 });
   const [referenceAdjusting, setReferenceAdjusting] = useState(false);
   const [referencePlacement, setReferencePlacement] = useState<ReferencePlacement>('below');
+  const referenceVisibleRef = useRef(referenceVisible);
+  const referenceShortcutRef = useRef<{
+    pressed: boolean;
+    pressedAt: number;
+    visibleBeforePress: boolean;
+  }>({
+    pressed: false,
+    pressedAt: 0,
+    visibleBeforePress: false,
+  });
   const [canvasWidth, setCanvasWidth] = useState(project.width);
   const [canvasHeight, setCanvasHeight] = useState(project.height);
   const [convertWidth, setConvertWidth] = useState(defaultImportSettings.width);
@@ -701,6 +716,77 @@ export default function App() {
     localStorage.setItem(languageKey, language);
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    referenceVisibleRef.current = referenceVisible;
+  }, [referenceVisible]);
+
+  useEffect(() => {
+    const shortcutState = referenceShortcutRef.current;
+
+    function resetShortcutState() {
+      if (shortcutState.pressed) {
+        setReferenceVisible(false);
+      }
+      shortcutState.pressed = false;
+      shortcutState.pressedAt = 0;
+    }
+
+    function isEditableTarget(target: EventTarget | null) {
+      return target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [role="textbox"]'));
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (
+        event.code !== referenceShortcut ||
+        event.repeat ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey ||
+        event.isComposing ||
+        isEditableTarget(event.target) ||
+        !referenceImageUrl ||
+        shortcutState.pressed
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      shortcutState.pressed = true;
+      shortcutState.pressedAt = performance.now();
+      shortcutState.visibleBeforePress = referenceVisibleRef.current;
+      setReferenceVisible(true);
+    }
+
+    function onKeyUp(event: KeyboardEvent) {
+      if (event.code !== referenceShortcut || !shortcutState.pressed) return;
+
+      event.preventDefault();
+      const pressDuration = performance.now() - shortcutState.pressedAt;
+      if (pressDuration >= referenceLongPressDelay) {
+        setReferenceVisible(false);
+      } else {
+        setReferenceVisible(!shortcutState.visibleBeforePress);
+      }
+      shortcutState.pressed = false;
+      shortcutState.pressedAt = 0;
+    }
+
+    function onWindowBlur() {
+      resetShortcutState();
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onWindowBlur);
+    return () => {
+      resetShortcutState();
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onWindowBlur);
+    };
+  }, [referenceImageUrl]);
 
   useEffect(() => {
     if (!showPrintExportPanel) return;
@@ -1674,7 +1760,7 @@ export default function App() {
           <div className="left-card-header">
             <div>
               <strong>{text.referenceImage}</strong>
-              <span>{text.referenceHint}</span>
+              <span>{text.referenceHint} · {text.referenceShortcutHint}</span>
             </div>
             <small>{referenceImageUrl ? text.ready : text.noImage}</small>
           </div>
@@ -1693,6 +1779,8 @@ export default function App() {
               type="checkbox"
               checked={referenceVisible}
               disabled={!referenceImageUrl}
+              aria-keyshortcuts="o"
+              title={text.referenceShortcutHint}
               onChange={(event) => setReferenceVisible(event.target.checked)}
             />
           </label>
