@@ -32,7 +32,6 @@
     ]
   },
   "include": [
-    "app",
     "src",
     ".next/types/**/*.ts"
   ],

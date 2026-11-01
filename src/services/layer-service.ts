@@ -1,8 +1,8 @@
 import type { BeadLayer, BeadProject } from '@/common/types';
-import { composeVisibleCells, createLayer, withLayers } from '@/core/project';
+import { composeVisibleCells, createLayer, withLayers } from '@/services/domain/project';
 import { distinctUntilChanged, map } from 'rxjs';
-import { clampInteger } from '@/features/adjustments/colorOperations';
-import { layerDisplayName } from '@/features/layers/layerLabels';
+import { clampInteger } from './adjustment-operations';
+import { layerDisplayName } from './layer-rules';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';
 import { LocalizationService } from './localization-service';
@@ -67,6 +67,22 @@ export class LayerService extends BaseService {
     if (nextLayers.every((layer, index) => layer.includeInUsage === this.layers[index].includeInUsage)) return;
     this.commit();
     this.projectService.replace(withLayers(this.project, nextLayers));
+  }
+
+  toggleUsageLayer(layerId: string): void {
+    const includedLayerIds = new Set(this.layers.filter((layer) => layer.includeInUsage).map((layer) => layer.id));
+    if (includedLayerIds.has(layerId)) includedLayerIds.delete(layerId);
+    else includedLayerIds.add(layerId);
+    this.updateUsageSelection(includedLayerIds);
+  }
+
+  stepBeadsPerPack(direction: -1 | 1): void {
+    const current = this.project.settings.beadsPerPack;
+    const step = 500;
+    const next = direction > 0
+      ? current % step === 0 ? current + step : Math.ceil(current / step) * step
+      : current % step === 0 ? current - step : Math.floor(current / step) * step;
+    this.setBeadsPerPack(Math.max(step, next));
   }
 
   toggleActiveLayerOnly(): void {

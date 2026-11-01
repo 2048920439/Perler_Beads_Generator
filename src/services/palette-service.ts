@@ -1,6 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { defaultColorId, defaultRecentColorIds } from '@/config/editor';
-import { basicPalette, completePalette, getColor } from '@/core/palette';
+import type { PaletteColor } from '@/common/types';
+import { basicPalette, completePalette, getColor } from '@/services/domain/palette';
 import { BaseService } from '@/service-core/base-service';
 
 export type PaletteMode = 'basic' | 'complete';
@@ -13,6 +14,14 @@ export class PaletteService extends BaseService {
 
   get snapshot(): PaletteSnapshot { return this.snapshot$.getValue(); }
   get colors() { return this.snapshot.mode === 'basic' ? basicPalette : completePalette; }
+
+  getColor(colorId: string | null): PaletteColor | undefined {
+    return getColor(colorId);
+  }
+
+  getColors(groupId = 'all'): PaletteColor[] {
+    return groupId === 'all' ? this.colors : this.colors.filter((color) => color.group === groupId);
+  }
 
   selectColor(colorId: string, options: { updateRecent?: boolean } = {}): void {
     if (!getColor(colorId)) return;

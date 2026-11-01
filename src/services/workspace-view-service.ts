@@ -8,6 +8,10 @@ export class WorkspaceViewService extends BaseService {
   readonly hoverCell$ = new BehaviorSubject<HoverCell | null>(null);
   readonly snapshot$ = new BehaviorSubject({ highlightedColorId: null as string | null, showIsolatedBeads: false });
 
+  get snapshot(): { highlightedColorId: string | null; showIsolatedBeads: boolean } {
+    return this.snapshot$.getValue();
+  }
+
   setHoverCell(cell: HoverCell | null): void {
     const current = this.hoverCell$.getValue();
     if (current?.x === cell?.x && current?.y === cell?.y && current?.colorId === cell?.colorId) return;

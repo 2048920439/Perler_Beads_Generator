@@ -1,10 +1,8 @@
 import * as React from 'react';
-import { getColor } from '@/core/palette';
 import type { ArrowKind, BeadLayer, BeadProject, ClipboardPattern, CopyMode, MirrorDirection, MoveMode, RemoveMode, ShapeFillMode, ShapeKind, TextDirection, ToolId } from '@/common/types';
 import { useObservableState, useService } from '@/service-core';
 import { ToolService } from '@/services/tool-service';
-import { getDisplayProject } from '@/core/project';
-import { findIsolatedBeads } from '@/core/usage';
+import { EditorService } from '@/services/editor-service';
 import { ImageImportService } from '@/services/image-import-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
@@ -12,6 +10,7 @@ import { PaletteService } from '@/services/palette-service';
 import { ProjectService } from '@/services/project-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
+import { WorkspaceService } from '@/services/workspace-service';
 
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
@@ -46,8 +45,6 @@ type ReferenceImageRenderOptions = {
   placement: ReferenceImagePlacement;
 };
 
-function formatColorCode(colorId: string): string { return getColor(colorId)?.primaryCode ?? ''; }
-
 export default function WorkspaceCanvas() {
   const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
@@ -56,15 +53,11 @@ export default function WorkspaceCanvas() {
   const reference = useService(ReferenceImageService);
   const images = useService(ImageImportService);
   const view = useService(WorkspaceViewService);
+  const editor = useService(EditorService);
   useObservableState(localization.snapshot$);
-  const { project: sourceProject } = useObservableState(projectService.snapshot$);
-  const project = useMemo(() => getDisplayProject(sourceProject), [sourceProject]);
+  const { displayProject: project, highlightedCellIndices } = useObservableState(editor.snapshot$);
   const { selectedColorId } = useObservableState(palette.snapshot$);
-  const { highlightedColorId, showIsolatedBeads } = useObservableState(view.snapshot$);
-  const highlightedCellIndices = useMemo(
-    () => showIsolatedBeads ? [...new Set(findIsolatedBeads(sourceProject).map((item) => item.index))] : [],
-    [sourceProject, showIsolatedBeads],
-  );
+  const { highlightedColorId } = useObservableState(view.snapshot$);
   const {
     url: referenceImageUrl, opacity: referenceImageOpacity, scale: referenceImageScale,
     offset: referenceImageOffset, placement: referenceImagePlacement, visible, adjusting,
@@ -97,6 +90,7 @@ export default function WorkspaceCanvas() {
     notice.show(localization.language === 'zh' ? '已从画布拾取颜色。' : 'Color picked from canvas.');
   };
   const onHover = (cell: HoverCell | null) => view.setHoverCell(cell);
+  const workspace = useService(WorkspaceService);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const draftCellsRef = useRef<Array<string | null>>(getActiveLayerCells(project));
@@ -140,6 +134,7 @@ export default function WorkspaceCanvas() {
   });
 
   const cellSize = 18;
+  const formatColorCode = React.useCallback((colorId: string) => palette.getColor(colorId)?.primaryCode ?? '', [palette]);
   const referenceImageOptions = useMemo<ReferenceImageRenderOptions>(
     () => ({
       image: referenceImage,
@@ -236,8 +231,8 @@ export default function WorkspaceCanvas() {
     canvas.style.width = `${wrapper.clientWidth}px`;
     canvas.style.height = `${wrapper.clientHeight}px`;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawPattern(context, project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode);
-  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing]);
+    drawPattern(context, project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, palette.getColor, formatColorCode);
+  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode, palette]);
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
@@ -252,7 +247,7 @@ export default function WorkspaceCanvas() {
       const context = canvas.getContext('2d');
       if (context) {
         context.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawPattern(context, project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, formatColorCode);
+        drawPattern(context, project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, palette.getColor, formatColorCode);
       }
       setPan((current) => {
         const next = constrainPan(current, zoom);
@@ -261,7 +256,7 @@ export default function WorkspaceCanvas() {
     });
     if (wrapperRef.current) observer.observe(wrapperRef.current);
     return () => observer.disconnect();
-  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, constrainPan]);
+  }, [project, cellSize, zoom, pan, highlightedColorId, highlightedCellIndices, tool, selectedColorId, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, shapeKind, shapeDraft, hoverPoint, canEdit, referenceImageOptions, textToolValue, textToolDirection, textToolSize, textToolSpacing, constrainPan, formatColorCode, palette]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     const point = canvasToGridPoint(event.clientX, event.clientY);
@@ -634,13 +629,18 @@ export default function WorkspaceCanvas() {
   }
 
   function applyTool(x: number, y: number, gridX = x + 0.5, gridY = y + 0.5) {
-    const next = draftCellsRef.current.slice();
     const value = pointerRef.current.erasing || tool === 'eraser' ? null : selectedColorId;
-    if (value === null && !pointerRef.current.singleCellErasing) {
-      applyBrush(next, gridX, gridY, eraserSize, null, project.width, project.height);
-    } else {
-      next[y * project.width + x] = value;
-    }
+    const next = workspace.paintCell(
+      draftCellsRef.current,
+      project,
+      x,
+      y,
+      value,
+      eraserSize,
+      gridX,
+      gridY,
+      value === null && !pointerRef.current.singleCellErasing,
+    );
     draftCellsRef.current = next;
     onCellsChange(next);
   }
@@ -678,38 +678,28 @@ export default function WorkspaceCanvas() {
     toGridX = toX + 0.5,
     toGridY = toY + 0.5,
   ) {
-    const dx = Math.abs(toX - fromX);
-    const dy = Math.abs(toY - fromY);
-    const gridDx = Math.abs(toGridX - fromGridX);
-    const gridDy = Math.abs(toGridY - fromGridY);
-    const steps = Math.max(dx, dy, Math.ceil(Math.max(gridDx, gridDy) * 2), 1);
-    const next = draftCellsRef.current.slice();
     const value = pointerRef.current.erasing || tool === 'eraser' ? null : selectedColorId;
-    for (let step = 0; step <= steps; step += 1) {
-      const x = Math.round(fromX + ((toX - fromX) * step) / steps);
-      const y = Math.round(fromY + ((toY - fromY) * step) / steps);
-      if (value === null && !pointerRef.current.singleCellErasing) {
-        const gridX = fromGridX + ((toGridX - fromGridX) * step) / steps;
-        const gridY = fromGridY + ((toGridY - fromGridY) * step) / steps;
-        applyBrush(next, gridX, gridY, eraserSize, null, project.width, project.height);
-      } else {
-        next[y * project.width + x] = value;
-      }
-    }
+    const next = workspace.paintLine(
+      draftCellsRef.current,
+      project,
+      { x: fromX, y: fromY, gridX: fromGridX, gridY: fromGridY },
+      { x: toX, y: toY, gridX: toGridX, gridY: toGridY },
+      value,
+      eraserSize,
+      value === null && !pointerRef.current.singleCellErasing,
+    );
     draftCellsRef.current = next;
     onCellsChange(next);
   }
 
   function drawBrushLine(fromGridX: number, fromGridY: number, toGridX: number, toGridY: number) {
-    const dx = Math.abs(toGridX - fromGridX);
-    const dy = Math.abs(toGridY - fromGridY);
-    const steps = Math.max(Math.ceil(Math.max(dx, dy) * 3), 1);
-    const next = draftCellsRef.current.slice();
-    for (let step = 0; step <= steps; step += 1) {
-      const gridX = fromGridX + ((toGridX - fromGridX) * step) / steps;
-      const gridY = fromGridY + ((toGridY - fromGridY) * step) / steps;
-      applyBrush(next, gridX, gridY, eraserSize, null, project.width, project.height);
-    }
+    const next = workspace.paintBrushLine(
+      draftCellsRef.current,
+      project,
+      { x: fromGridX, y: fromGridY },
+      { x: toGridX, y: toGridY },
+      eraserSize,
+    );
     draftCellsRef.current = next;
     onCellsChange(next);
   }
@@ -802,6 +792,7 @@ function drawPattern(
   textToolDirection: TextDirection,
   textToolSize: number,
   textToolSpacing: number,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
   formatColorCode?: (colorId: string) => string,
 ): void {
   const canvasWidth = context.canvas.width / (window.devicePixelRatio || 1);
@@ -827,19 +818,19 @@ function drawPattern(
         .map((layer) => ({ layer, colorId: layer.cells?.[index] }))
         .filter((item): item is { layer: BeadLayer; colorId: string } => Boolean(item.colorId));
       const topColorId = stack.length > 0 ? stack[stack.length - 1].colorId : null;
-      const topColor = getColor(topColorId);
+      const topColor = resolveColor(topColorId);
       const left = x * cellSize;
       const top = y * cellSize;
 
       if (project.settings.beadDisplayMode === 'bead') {
-        drawBeadStack(context, stack, left, top, cellSize);
+        drawBeadStack(context, stack, left, top, cellSize, resolveColor);
       } else if (topColor) {
         context.fillStyle = topColor.hex;
         context.fillRect(left, top, cellSize, cellSize);
       }
 
       if (stack.length > 1 && project.settings.showLayerOverlap) {
-        drawStackOverlay(context, stack, left, top, cellSize);
+        drawStackOverlay(context, stack, left, top, cellSize, resolveColor);
       }
 
       if (highlightedColorId && topColorId !== highlightedColorId) {
@@ -869,14 +860,14 @@ function drawPattern(
     drawCopySelectionSet(context, copySelectionIndices, project.width, cellSize);
   }
   if (hoverPoint && (canEdit || tool === 'eyedropper' || tool === 'copy')) {
-    drawToolImpactPreview(context, project, tool, selectedColorId, hoverPoint, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, textToolValue, textToolDirection, textToolSize, textToolSpacing, cellSize);
+    drawToolImpactPreview(context, project, tool, selectedColorId, hoverPoint, eraserSize, moveMode, removeMode, mirrorMode, clipboardPattern, copyMode, copySelectionIndices, textToolValue, textToolDirection, textToolSize, textToolSpacing, cellSize, resolveColor);
   }
   if (shapeDraft && canEdit) {
     const indices = collectShapeIndices(shapeDraft.kind, shapeDraft.fillMode, shapeDraft.arrowKind, shapeDraft.start, shapeDraft.end, project.width, project.height);
-    drawShapePreview(context, indices, project.width, cellSize, selectedColorId);
+    drawShapePreview(context, indices, project.width, cellSize, selectedColorId, resolveColor);
   } else if (tool === 'shape' && hoverPoint?.cell && canEdit) {
     const index = hoverPoint.cell.y * project.width + hoverPoint.cell.x;
-    drawShapePreview(context, [index], project.width, cellSize, selectedColorId);
+    drawShapePreview(context, [index], project.width, cellSize, selectedColorId, resolveColor);
   }
   if (project.settings.showGrid) drawGrid(context, project, cellSize);
   if (project.settings.showPegboardBoundaries) drawPegboardBoundaries(context, project, cellSize);
@@ -885,36 +876,6 @@ function drawPattern(
     drawBrushCursor(context, hoverPoint.gridX, hoverPoint.gridY, eraserSize, cellSize);
   }
   context.restore();
-}
-
-function applyBrush(
-  cells: Array<string | null>,
-  centerX: number,
-  centerY: number,
-  size: number,
-  value: string | null,
-  width: number,
-  height: number,
-): void {
-  if (size <= 0.5) {
-    const x = Math.floor(centerX);
-    const y = Math.floor(centerY);
-    if (x >= 0 && y >= 0 && x < width && y < height) cells[y * width + x] = value;
-    return;
-  }
-  const diameter = Math.max(1, Math.round(size));
-  const radius = diameter / 2;
-  const minX = Math.max(0, Math.floor(centerX - radius - 0.5));
-  const maxX = Math.min(width - 1, Math.ceil(centerX + radius - 0.5));
-  const minY = Math.max(0, Math.floor(centerY - radius - 0.5));
-  const maxY = Math.min(height - 1, Math.ceil(centerY + radius - 0.5));
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      if (circleIntersectsCell(centerX, centerY, radius, x, y)) {
-        cells[y * width + x] = value;
-      }
-    }
-  }
 }
 
 function drawBrushCursor(
@@ -953,9 +914,10 @@ function drawShapePreview(
   width: number,
   cellSize: number,
   selectedColorId: string,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
 ): void {
   if (indices.length === 0) return;
-  const color = getColor(selectedColorId);
+  const color = resolveColor(selectedColorId);
   context.save();
   if (color) {
     context.fillStyle = hexToRgba(color.hex, 0.32);
@@ -977,6 +939,7 @@ function drawClipboardPatternPreview(
   boardWidth: number,
   boardHeight: number,
   cellSize: number,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
 ): void {
   const indices: number[] = [];
   context.save();
@@ -985,7 +948,7 @@ function drawClipboardPatternPreview(
     const x = startX + (index % pattern.width);
     const y = startY + Math.floor(index / pattern.width);
     if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) return;
-    const color = getColor(colorId);
+    const color = resolveColor(colorId);
     if (color) {
       context.fillStyle = hexToRgba(color.hex, 0.34);
       context.fillRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
@@ -1604,6 +1567,7 @@ function drawToolImpactPreview(
   textToolSize: number,
   textToolSpacing: number,
   cellSize: number,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
 ): void {
   if (tool === 'eraser') {
     if (eraserSize <= 0) return;
@@ -1683,7 +1647,7 @@ function drawToolImpactPreview(
 
   if (tool === 'paste') {
     if (!hoverPoint.cell || !clipboardPattern) return;
-    drawClipboardPatternPreview(context, clipboardPattern, hoverPoint.cell.x, hoverPoint.cell.y, project.width, project.height, cellSize);
+    drawClipboardPatternPreview(context, clipboardPattern, hoverPoint.cell.x, hoverPoint.cell.y, project.width, project.height, cellSize, resolveColor);
     return;
   }
 
@@ -1716,7 +1680,7 @@ function drawToolImpactPreview(
   if (tool === 'text') {
     if (!hoverPoint.cell) return;
     const indices = collectTextIndices(textToolValue, textToolDirection, textToolSize, textToolSpacing, hoverPoint.cell.x, hoverPoint.cell.y, project.width, project.height);
-    drawShapePreview(context, indices, project.width, cellSize, selectedColorId);
+    drawShapePreview(context, indices, project.width, cellSize, selectedColorId, resolveColor);
     return;
   }
 
@@ -2263,11 +2227,12 @@ function drawBeadStack(
   left: number,
   top: number,
   cellSize: number,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
 ): void {
   if (stack.length === 0) return;
 
   const topItem = stack[stack.length - 1];
-  const color = getColor(topItem.colorId);
+  const color = resolveColor(topItem.colorId);
   if (!color) return;
   context.globalAlpha = Number.isFinite(topItem.layer.opacity) ? topItem.layer.opacity : 1;
   context.beginPath();
@@ -2293,6 +2258,7 @@ function drawStackOverlay(
   left: number,
   top: number,
   cellSize: number,
+  resolveColor: (colorId: string | null) => ReturnType<PaletteService['getColor']>,
 ): void {
   const count = stack.length;
   const badgeRadius = Math.max(3.5, Math.min(5.5, cellSize * 0.25));
@@ -2324,7 +2290,7 @@ function drawStackOverlay(
   context.fillStyle = 'rgba(17, 24, 39, 0.42)';
   context.fillRect(stripLeft - 0.5, stripTop - 0.5, stripWidth + 1, stripHeight + 1);
   stripColors.forEach(({ colorId }, index) => {
-    const color = getColor(colorId);
+    const color = resolveColor(colorId);
     if (!color) return;
     context.fillStyle = color.hex;
     context.fillRect(stripLeft, stripTop + index * segmentHeight, stripWidth, Math.ceil(segmentHeight));

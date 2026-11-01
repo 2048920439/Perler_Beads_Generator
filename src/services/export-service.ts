@@ -6,11 +6,13 @@ import {
   downloadProjectJson,
   downloadUsageWorkbook,
   type PrintExportOptions,
-} from '@/core/export/exporters';
+} from '@/services/domain/export/exporters';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';
 import { LocalizationService } from './localization-service';
 import { NoticeService } from './notice-service';
+
+export type { PrintExportOptions } from '@/services/domain/export/exporters';
 
 export class ExportService extends BaseService {
   constructor(

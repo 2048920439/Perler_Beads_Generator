@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import '../src/styles.css';
+import '../styles.css';
 
 export const metadata: Metadata = {
   title: 'Perler Beads Generator',

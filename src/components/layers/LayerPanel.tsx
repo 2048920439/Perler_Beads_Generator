@@ -5,8 +5,7 @@ import { DragHandleIcon, DuplicateIcon, EyeIcon, LockIcon, PencilIcon, TrashIcon
 import { useObservableState, useService } from '@/service-core';
 import { LayerService } from '@/services/layer-service';
 import { LocalizationService } from '@/services/localization-service';
-import { ProjectService } from '@/services/project-service';
-import { layerDisplayName as displayLayerName } from './layerLabels';
+import { EditorService } from '@/services/editor-service';
 
 type DragTarget = { id: string; edge: 'before' | 'after' };
 
@@ -20,12 +19,12 @@ function dragTargetFromEvent(event: DragEvent<HTMLElement>, layerId: string): Dr
 
 export function LayerPanel() {
   const service = useService(LayerService);
-  const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
-  const language = useObservableState(localization.snapshot$);
-  const { project } = useObservableState(projectService.snapshot$);
-  const { layers, activeLayerId } = project;
-  const layerDisplayName = (layer: BeadLayer, index: number) => displayLayerName(layer, index, language);
+  const editor = useService(EditorService);
+  useObservableState(localization.snapshot$);
+  const { project, layers } = useObservableState(editor.snapshot$);
+  const { activeLayerId } = project;
+  const layerDisplayName = (layer: BeadLayer, index: number) => editor.getLayerDisplayName(layer, index);
   function layerMetaText(isActive: boolean, isVisible: boolean, isLocked: boolean, beadCount: number): string {
     return [
       ...(isActive ? [localization.text.activeLayer] : []), ...(!isVisible ? [localization.text.hiddenLayer] : []),
@@ -75,7 +74,7 @@ export function LayerPanel() {
         {[...layers].reverse().map((layer) => {
           const layerIndex = layers.findIndex((item) => item.id === layer.id);
           const isActive = layer.id === activeLayerId;
-          const beadCount = layer.cells.filter(Boolean).length;
+          const beadCount = editor.getLayerBeadCount(layer);
           const displayName = layerDisplayName(layer, layerIndex);
           const rowClassName = [
             'layer-row',

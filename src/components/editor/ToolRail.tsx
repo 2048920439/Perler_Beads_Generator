@@ -1,7 +1,7 @@
 import { tools } from '@/config/editor';
 import { ArrowOptionIcon, ResetIcon, ShapeOptionIcon, ToolIcon } from '@/common/ui/EditorIcons';
 import type { CopyMode, MoveMode, RemoveMode, RightClickAction, ShapeFillMode, ShapeKind, TextDirection, ToolId, ArrowKind, MirrorDirection } from '@/common/types';
-import { ClipboardPreview } from '@/features/editor/ClipboardPreview';
+import { ClipboardPreview } from '@/components/editor/ClipboardPreview';
 import { useObservableState, useService } from '@/service-core';
 import { ProjectService } from '@/services/project-service';
 import { ToolService } from '@/services/tool-service';
@@ -202,7 +202,7 @@ export function ToolRail() {
               <div>
                 <strong>{localization.text.clipboardPreview}</strong>
                 {clipboardPattern && (
-                  <span>{localization.text.clipboardSize(clipboardPattern.width, clipboardPattern.height, clipboardPattern.cells.filter(Boolean).length)}</span>
+                  <span>{localization.text.clipboardSize(clipboardPattern.width, clipboardPattern.height, toolService.getClipboardBeadCount())}</span>
                 )}
               </div>
               <button
@@ -367,7 +367,7 @@ export function ToolRail() {
                   max={72}
                   step={1}
                   value={textToolSize}
-                  onChange={(event) => setTextToolSize(Math.min(72, Math.max(5, Number(event.target.value) || 5)))}
+                  onChange={(event) => setTextToolSize(toolService.normalizeTextSize(Number(event.target.value)))}
                 />
                 <span>{language === 'zh' ? '格' : 'cells'}</span>
               </label>
@@ -390,7 +390,7 @@ export function ToolRail() {
                   max={24}
                   step={1}
                   value={textToolSpacing}
-                  onChange={(event) => setTextToolSpacing(Math.min(24, Math.max(0, Number(event.target.value) || 0)))}
+                  onChange={(event) => setTextToolSpacing(toolService.normalizeTextSpacing(Number(event.target.value)))}
                 />
                 <span>{language === 'zh' ? '格' : 'cells'}</span>
               </label>

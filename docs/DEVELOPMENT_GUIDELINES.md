@@ -1,6 +1,6 @@
 # React and TypeScript Development Guidelines
 
-These guidelines apply to changes in `app/` and `src/`. They complement the
+These guidelines apply to changes in `src/app/` and `src/`. They complement the
 repository-specific requirements in [`../AGENTS.md`](../AGENTS.md). If a general
 recommendation conflicts with an explicit project requirement, follow the
 project requirement.

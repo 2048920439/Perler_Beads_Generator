@@ -95,15 +95,15 @@ docs/
   cartoon-source.png      # 卡通风格原图
   blank-workspace.png     # 空白工作区预览
 
-app/
+src/app/
   layout.tsx              # Next.js 根布局
   page.tsx                # Next.js 页面入口
   client-app.tsx          # 客户端服务容器和应用挂载
 
 src/
   presentation/           # 页面组合和布局
-  features/               # 按功能组织的业务组件
-  core/                   # 领域逻辑
+  components/             # 仅负责展示的 UI 组件
+  services/domain/        # 领域规则和数据处理
   services/               # 状态和业务流程
   styles.css              # 全局样式
 
@@ -237,15 +237,15 @@ docs/
   cartoon-source.png      # Cartoon source image
   blank-workspace.png     # Blank workspace preview
 
-app/
+src/app/
   layout.tsx              # Next.js root layout
   page.tsx                # Next.js route entry
   client-app.tsx          # Client-side service provider and application mount
 
 src/
   presentation/           # Page composition and layout
-  features/               # Feature-oriented business components
-  core/                   # Domain logic
+  components/             # UI-only components
+  services/domain/        # Domain rules and data processing
   services/               # State and business orchestration
   styles.css              # Global styles
 

@@ -1,27 +1,23 @@
 import * as React from 'react';
 import Image from 'next/image';
-import ThreePreview from '@/features/editor/ThreePreview';
+import ThreePreview from '@/components/editor/ThreePreview';
 import type { BackgroundMode, GenerationStyle } from '@/common/types';
-import { getDisplayProject } from '@/core/project';
-import { summarizeUsage } from '@/core/usage';
-import { ImageGridEditor } from '@/features/image-import/ImageGridEditor';
+import { ImageGridEditor } from '@/components/image-import/ImageGridEditor';
+import { EditorService } from '@/services/editor-service';
 import { useObservableState, useService } from '@/service-core';
 import { ImageImportService } from '@/services/image-import-service';
 import { LocalizationService } from '@/services/localization-service';
-import { ProjectService } from '@/services/project-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
 
 export function SourcePanel() {
   const images = useService(ImageImportService);
   const reference = useService(ReferenceImageService);
   const localization = useService(LocalizationService);
-  const projectService = useService(ProjectService);
+  const editor = useService(EditorService);
   const language = useObservableState(localization.snapshot$);
-  const { project } = useObservableState(projectService.snapshot$);
+  const { displayProject, totalBeads } = useObservableState(editor.snapshot$);
   const { pendingFile, pendingImageUrl, isGenerating, convertWidth, maxColors, tolerance, generationStyle, backgroundMode, showGridEditor } = useObservableState(images.snapshot$);
   const { file: referenceFile, url: referenceImageUrl, visible: referenceVisible, opacity: referenceOpacity, adjusting: referenceAdjusting, placement: referencePlacement } = useObservableState(reference.snapshot$);
-  const displayProject = React.useMemo(() => getDisplayProject(project), [project]);
-  const totalBeads = React.useMemo(() => summarizeUsage(project).reduce((sum, row) => sum + row.count, 0), [project]);
   const fileInput = React.useRef<HTMLInputElement>(null);
   const referenceInput = React.useRef<HTMLInputElement>(null);
   const [floatingHelp, setFloatingHelp] = React.useState<{ text: string; left: number; top: number } | null>(null);

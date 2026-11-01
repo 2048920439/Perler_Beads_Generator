@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { CloseIcon, ExportIcon } from '@/common/ui/EditorIcons';
 import type { EditorText } from '@/config/localization';
-import type { PrintExportOptions } from '@/core/export/exporters';
+import type { PrintExportOptions } from '@/services/export-service';
 
 const { useEffect, useState } = React;
 

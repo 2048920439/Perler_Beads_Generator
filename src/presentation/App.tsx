@@ -1,7 +1,7 @@
-import WorkspaceCanvas from '@/features/editor/WorkspaceCanvas';
+import WorkspaceCanvas from '@/components/editor/WorkspaceCanvas';
 import { SourcePanel } from '@/presentation/SourcePanel';
 import { EditorTopBar } from '@/presentation/EditorTopBar';
-import { ToolRail } from '@/features/editor/ToolRail';
+import { ToolRail } from '@/components/editor/ToolRail';
 import { RightPanel } from '@/presentation/RightPanel';
 import { useService } from '@/service-core';
 import { ImageImportService } from '@/services/image-import-service';

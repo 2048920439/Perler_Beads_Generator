@@ -12,6 +12,7 @@ import { PaletteService } from '@/services/palette-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
 import { WorkspaceService } from '@/services/workspace-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
+import { EditorService } from '@/services/editor-service';
 import { BaseService } from './base-service';
 
 export function createServiceScope() {
@@ -34,6 +35,7 @@ export function createServiceScope() {
   register(AdjustmentService, new AdjustmentService(project, palette, localization, notice));
   register(ExportService, new ExportService(project, localization, notice));
   register(WorkspaceService, new WorkspaceService(project, images, reference, palette, tools, localization, notice));
+  register(EditorService, new EditorService(project, palette, localization, injector.resolve(WorkspaceViewService)));
 
   return {
     injector,

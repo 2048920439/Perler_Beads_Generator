@@ -1,4 +1,4 @@
-import { getColor } from '@/core/palette';
+import { getColor } from '@/services/domain/palette';
 import type { BeadProject, UsageRow } from '@/common/types';
 
 export function summarizeUsage(project: BeadProject): UsageRow[] {

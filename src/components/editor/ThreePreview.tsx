@@ -1,9 +1,11 @@
 import * as React from 'react';
 import * as THREE from 'three';
-import { getColor } from '@/core/palette';
 import type { BeadProject } from '@/common/types';
+import { useService } from '@/service-core';
+import { EditorService } from '@/services/editor-service';
+import { PaletteService } from '@/services/palette-service';
 
-const { useEffect, useMemo, useRef, useState } = React;
+const { useEffect, useRef, useState } = React;
 const BEAD_RADIUS = 0.31;
 const BEAD_HEIGHT = BEAD_RADIUS * 2;
 const LAYER_LIFT = BEAD_HEIGHT;
@@ -30,6 +32,8 @@ type Props = {
 };
 
 export default function ThreePreview({ project, title, emptyLabel, closeLabel, expandLabel }: Props) {
+  const palette = useService(PaletteService);
+  const editor = useService(EditorService);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const modalHostRef = useRef<HTMLDivElement | null>(null);
   const refs = useRef<PreviewRefs | null>(null);
@@ -42,13 +46,7 @@ export default function ThreePreview({ project, title, emptyLabel, closeLabel, e
     targetY: 0,
   });
   const [expanded, setExpanded] = useState(false);
-  const beadCount = useMemo(
-    () =>
-      (project.layers ?? [])
-        .filter((layer) => layer.visible)
-        .reduce((sum, layer) => sum + (layer.cells ?? []).filter(Boolean).length, 0),
-    [project.layers],
-  );
+  const beadCount = editor.getVisibleBeadCount(project);
 
   useEffect(() => {
     const host = expanded ? modalHostRef.current : hostRef.current;
@@ -189,7 +187,7 @@ export default function ThreePreview({ project, title, emptyLabel, closeLabel, e
     const beadGeometry = createBeadGeometry(project.settings.beadDisplayMode === 'pixel' ? 'square' : 'round');
     const matrix = new THREE.Matrix4();
     byColor.forEach((items, colorId) => {
-      const color = getColor(colorId);
+      const color = palette.getColor(colorId);
       if (!color) return;
       const material = new THREE.MeshBasicMaterial({
         color: new THREE.Color(color.hex),
@@ -216,7 +214,7 @@ export default function ThreePreview({ project, title, emptyLabel, closeLabel, e
     controlsRef.current.distance = clamp(span * 1.25, controlsRef.current.minDistance, controlsRef.current.maxDistance);
     controlsRef.current.targetY = Math.max(0, ((visibleLayers.length - 1) * LAYER_LIFT) / 2);
     updateCamera(preview, controlsRef.current);
-  }, [project, expanded]);
+  }, [project, expanded, palette]);
 
   return (
     <>

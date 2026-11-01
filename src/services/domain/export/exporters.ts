@@ -1,4 +1,4 @@
-import { getColor, mappedCode } from '@/core/palette';
+import { getColor, mappedCode } from '@/services/domain/palette';
 import type { BeadLayer, BeadProject, UsageRow } from '@/common/types';
 
 export type PrintExportOptions = {

@@ -88,6 +88,18 @@ export class ToolService extends BaseService {
     return this.snapshot$.getValue();
   }
 
+  getClipboardBeadCount(): number {
+    return this.snapshot.clipboardPattern?.cells.filter(Boolean).length ?? 0;
+  }
+
+  normalizeTextSize(value: number): number {
+    return Math.min(72, Math.max(5, Number(value) || 5));
+  }
+
+  normalizeTextSpacing(value: number): number {
+    return Math.min(24, Math.max(0, Number(value) || 0));
+  }
+
   activateTool(nextTool: ToolId): void {
     const current = this.snapshot;
     const closingTextOptions = nextTool === 'text' && current.tool === 'text' && current.showTextOptions;

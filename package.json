@@ -7,7 +7,7 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "next dev",
-    "lint": "eslint app src",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "build": "next build",
     "preview": "node scripts/preview-export.cjs"

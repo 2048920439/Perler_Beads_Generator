@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sizePresets } from '@/config/editor';
 import { GitHubIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon } from '@/common/ui/EditorIcons';
-import { PrintExportMenu } from '@/features/export/PrintExportMenu';
-import type { PrintExportOptions } from '@/core/export/exporters';
-import { summarizeUsage } from '@/core/usage';
+import { PrintExportMenu } from '@/components/export/PrintExportMenu';
 import { useObservableState, useService } from '@/service-core';
+import type { PrintExportOptions } from '@/services/export-service';
 import { ExportService } from '@/services/export-service';
 import { ImageImportService } from '@/services/image-import-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
 import { ProjectService } from '@/services/project-service';
 import { WorkspaceService } from '@/services/workspace-service';
+import { EditorService } from '@/services/editor-service';
 
 export function EditorTopBar() {
   const projectService = useService(ProjectService);
@@ -19,13 +19,12 @@ export function EditorTopBar() {
   const images = useService(ImageImportService);
   const localization = useService(LocalizationService);
   const notice = useService(NoticeService);
+  const editor = useService(EditorService);
   const language = useObservableState(localization.snapshot$);
-  const { project, past, future } = useObservableState(projectService.snapshot$);
+  const { project, past, future, usage, totalBeads } = useObservableState(editor.snapshot$);
   const [width, onWidthChange] = useState(project.width);
   const [height, onHeightChange] = useState(project.height);
   const jsonInputRef = useRef<HTMLInputElement>(null);
-  const usage = useMemo(() => summarizeUsage(project), [project]);
-  const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
   const selectedSizePreset = sizePresets.find((preset) => preset.width === width && preset.height === height)?.label ?? '';
   const defaultProjectName = useMemo(() => exports.defaultProjectName(language), [exports, language]);
   useEffect(() => { onWidthChange(project.width); onHeightChange(project.height); }, [project.width, project.height]);

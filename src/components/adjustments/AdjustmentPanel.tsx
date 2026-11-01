@@ -1,19 +1,15 @@
-import type { AdjustmentSettings, LayerEffect } from './colorOperations';
-import { hasAdjustments } from './colorOperations';
+import type { AdjustmentSettings, LayerEffect } from '@/services/adjustment-operations';
 import { useObservableState, useService } from '@/service-core';
 import { AdjustmentService } from '@/services/adjustment-service';
 import { LocalizationService } from '@/services/localization-service';
-import { ProjectService } from '@/services/project-service';
-import { layerDisplayName } from '@/features/layers/layerLabels';
+import { EditorService } from '@/services/editor-service';
 
 export function AdjustmentPanel() {
   const service = useService(AdjustmentService);
-  const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
-  const language = useObservableState(localization.snapshot$);
-  const { project } = useObservableState(projectService.snapshot$);
-  const activeLayer = projectService.activeLayer;
-  const activeLayerName = layerDisplayName(activeLayer, project.layers.findIndex((layer) => layer.id === activeLayer.id), language);
+  const editor = useService(EditorService);
+  useObservableState(localization.snapshot$);
+  const { activeLayer, activeLayerName } = useObservableState(editor.snapshot$);
   const { adjustments, colorCleanupStrength, layerColorLimit } = useObservableState(service.snapshot$);
   const onAdjustmentChange = (key: keyof AdjustmentSettings, value: number) => service.setAdjustment(key, value);
   const onReset = () => service.reset();
@@ -52,7 +48,7 @@ export function AdjustmentPanel() {
         </label>
       ))}
       <div className="adjustment-actions">
-        <button type="button" onClick={onReset} disabled={!hasAdjustments(adjustments)}>
+        <button type="button" onClick={onReset} disabled={!service.hasAdjustments(adjustments)}>
           {localization.text.resetAdjustments}
         </button>
       </div>

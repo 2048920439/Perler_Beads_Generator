@@ -1,4 +1,4 @@
-import { paletteVersion } from '@/core/palette';
+import { paletteVersion } from '@/services/domain/palette';
 import type { BeadLayer, BeadProject } from '@/common/types';
 
 export const autosaveKey = 'perler-beads-generator:draft';

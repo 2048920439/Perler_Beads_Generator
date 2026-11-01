@@ -1,4 +1,4 @@
-import { colorDistance, nearestPaletteColor, palette } from '@/core/palette';
+import { colorDistance, nearestPaletteColor, palette } from '@/services/domain/palette';
 import type { ConvertOptions, ConvertResult, GenerationStyle, PaletteColor } from '@/common/types';
 
 type StyleProfile = {

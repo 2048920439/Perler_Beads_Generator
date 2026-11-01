@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { BeadLayer, PaletteColor } from '@/common/types';
-import { getColor } from '@/core/palette';
-import { createProject } from '@/core/project';
-import { findIsolatedBeads, summarizeUsage } from '@/core/usage';
 import { EyeIcon } from '@/common/ui/EditorIcons';
-import { LayerPanel } from '@/features/layers/LayerPanel';
-import { AdjustmentPanel } from '@/features/adjustments/AdjustmentPanel';
+import { LayerPanel } from '@/components/layers/LayerPanel';
+import { AdjustmentPanel } from '@/components/adjustments/AdjustmentPanel';
 import { useObservableState, useService } from '@/service-core';
 import { LayerService } from '@/services/layer-service';
 import { ProjectService } from '@/services/project-service';
@@ -14,7 +11,7 @@ import { NoticeService } from '@/services/notice-service';
 import { PaletteService, type PaletteMode } from '@/services/palette-service';
 import { ToolService } from '@/services/tool-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
-import { layerDisplayName as displayLayerName } from '@/features/layers/layerLabels';
+import { EditorService } from '@/services/editor-service';
 
 type RightTab = 'palette' | 'layers' | 'usage' | 'adjustments';
 export function RightPanel() {
@@ -23,37 +20,20 @@ export function RightPanel() {
   const paletteService = useService(PaletteService);
   const toolService = useService(ToolService);
   const view = useService(WorkspaceViewService);
+  const editor = useService(EditorService);
   const language = useObservableState(localization.snapshot$);
   const notice = useObservableState(noticeService.snapshot$);
-  const { mode: paletteMode, selectedColorId, recentColorIds } = useObservableState(paletteService.snapshot$);
+  const { mode: paletteMode, selectedColorId } = useObservableState(paletteService.snapshot$);
   const { tool } = useObservableState(toolService.snapshot$);
   const { showIsolatedBeads } = useObservableState(view.snapshot$);
   const setShowIsolatedBeads = (value: boolean) => view.setShowIsolatedBeads(value);
   const setPaletteMode = (mode: PaletteMode) => paletteService.setMode(mode);
   const projectService = useService(ProjectService);
   const layerService = useService(LayerService);
-  const { project } = useObservableState(projectService.snapshot$);
-  const layers = project.layers?.length ? project.layers : createProject(project.width, project.height).layers;
-  const activeLayer = layers.find((layer) => layer.id === project.activeLayerId) ?? layers[0];
-  const countedLayers = layers.filter((layer) => layer.includeInUsage);
-  const usage = useMemo(() => summarizeUsage(project), [project]);
-  const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
-  const totalPacks = usage.reduce((sum, row) => sum + row.packs, 0);
-  const boardCount = Math.ceil(project.width / project.boardSettings.boardWidth) * Math.ceil(project.height / project.boardSettings.boardHeight);
-  const isolatedBeads = useMemo(() => findIsolatedBeads(project).length, [project]);
+  const { project, layers, activeLayer, countedLayers, usage, totalBeads, totalPacks, isolatedBeads, boardCount, selectedColor, recentColors, paletteGroups } = useObservableState(editor.snapshot$);
   const [rightTab, setRightTab] = useState<RightTab>('palette');
   const [paletteGroup, setPaletteGroup] = useState('all');
-  const activePalette = paletteService.colors;
-  const recentColors = recentColorIds.flatMap((id) => {
-    const color = activePalette.find((item) => item.id === id);
-    return color ? [color] : [];
-  });
-  const selectedColor = getColor(selectedColorId);
-  const paletteGroups = useMemo(
-    () => [{ id: 'all', label: 'All' }, ...[...new Set(activePalette.map((color) => color.group))].map((group) => ({ id: group, label: group }))],
-    [activePalette],
-  );
-  const visiblePalette = paletteGroup === 'all' ? activePalette : activePalette.filter((color) => color.group === paletteGroup);
+  const visiblePalette = paletteService.getColors(paletteGroup);
 
   function displayCode(color: PaletteColor) { return color.primaryCode; }
   function displayName(color: PaletteColor) { return color.name; }
@@ -63,23 +43,13 @@ export function RightPanel() {
     if (!paletteGroups.some((group) => group.id === paletteGroup)) setPaletteGroup('all');
   }, [paletteGroup, paletteGroups]);
 
-  function layerDisplayName(layer: BeadLayer, index: number): string {
-    return displayLayerName(layer, index, language);
-  }
+  function layerDisplayName(layer: BeadLayer, index: number): string { return editor.getLayerDisplayName(layer, index); }
   function updateUsageLayerSelection(layerIds: Set<string>) { layerService.updateUsageSelection(layerIds); }
   function toggleUsageLayer(layerId: string) {
-    const includedLayerIds = new Set(countedLayers.map((layer) => layer.id));
-    if (includedLayerIds.has(layerId)) includedLayerIds.delete(layerId);
-    else includedLayerIds.add(layerId);
-    updateUsageLayerSelection(includedLayerIds);
+    layerService.toggleUsageLayer(layerId);
   }
   function stepBeadsPerPack(direction: -1 | 1) {
-    const current = project.settings.beadsPerPack;
-    const step = 500;
-    const next = direction > 0
-      ? current % step === 0 ? current + step : Math.ceil(current / step) * step
-      : current % step === 0 ? current - step : Math.floor(current / step) * step;
-    layerService.setBeadsPerPack(Math.max(step, next));
+    layerService.stepBeadsPerPack(direction);
   }
   function setBeadsPerPack(value: number) { layerService.setBeadsPerPack(value); }
   function updateProject(changes: Partial<typeof project['settings']>) {
@@ -445,6 +415,7 @@ export function RightPanel() {
 
 function CellInfo() {
   const localization = useService(LocalizationService);
+  const editor = useService(EditorService);
   useObservableState(localization.snapshot$);
   const view = useService(WorkspaceViewService);
   const hoverCell = useObservableState(view.hoverCell$);
@@ -452,7 +423,7 @@ function CellInfo() {
     <section className="panel-section hover-section">
       <h2>{localization.text.cell}</h2>
       <span>{hoverCell
-        ? `R${hoverCell.y + 1} C${hoverCell.x + 1} - ${getColor(hoverCell.colorId)?.primaryCode ?? localization.text.empty}`
+        ? `R${hoverCell.y + 1} C${hoverCell.x + 1} - ${editor.getColor(hoverCell.colorId)?.primaryCode ?? localization.text.empty}`
         : localization.text.hoverBoard}</span>
     </section>
   );

@@ -3,12 +3,13 @@ import { defaultAdjustments } from '@/config/editor';
 import {
   adjustLayerCells,
   applyEffectToLayer,
+  hasAdjustments,
   limitLayerColors,
   mergeCloseLayerColors,
   type AdjustmentSettings,
   type LayerEffect,
-} from '@/features/adjustments/colorOperations';
-import { withLayers } from '@/core/project';
+} from './adjustment-operations';
+import { withLayers } from '@/services/domain/project';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';
 import { LocalizationService } from './localization-service';
@@ -30,6 +31,10 @@ export class AdjustmentService extends BaseService {
     private readonly localization: LocalizationService,
     private readonly notice: NoticeService,
   ) { super(); }
+
+  hasAdjustments(adjustments: AdjustmentSettings): boolean {
+    return hasAdjustments(adjustments);
+  }
 
   setAdjustment(key: keyof AdjustmentSettings, value: number): void {
     const layer = this.getEditableLayer();

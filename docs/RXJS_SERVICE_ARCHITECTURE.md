@@ -22,7 +22,7 @@ Other state is better kept local to the component that owns the interaction:
 The recommended target is:
 
 ```text
-UI -> feature service -> pure core/domain functions
+UI components -> application services -> pure core/domain functions
                  \-> browser effects
 ```
 
@@ -47,7 +47,7 @@ workflow cancellation.
 `useService` and subscribe with `useObservableState`. They do not receive
 business state or service methods through props.
 Existing project normalization and immutable transformations remain in
-`src/core/project.ts`.
+`src/services/domain/project.ts`.
 
 The client composition root is `src/service-core/service-injector.ts`,
 mounted by `src/service-core/service-provider.tsx`.
@@ -89,7 +89,7 @@ right panel.
 Keep presentation-only state such as the selected panel tab, rename draft,
 drag target, export-popover draft, tooltip, zoom and pan in its component.
 Small visual children such as the clipboard preview and export menu retain
-explicit props; dependency injection is a feature boundary, not a requirement
+explicit props; dependency injection is a service boundary, not a requirement
 for every visual component.
 
 Adjustment sessions survive tab switches but end when an external edit,
@@ -99,7 +99,7 @@ asynchronous processing stage before committing its result.
 
 ## Guardrails
 
-- Keep pure transformations in `src/core`; services coordinate them.
+- Keep pure transformations under `src/services/domain`; application services coordinate them.
 - Do not put high-frequency pointer events into the project state stream.
 - Use `switchMap` for replaceable async work and `concatMap` only when every
   queued command must complete.

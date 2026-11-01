@@ -1,8 +1,8 @@
 import { BehaviorSubject, fromEvent } from 'rxjs';
 import type { BackgroundMode, BeadProject, ConvertOptions, ConvertResult, GenerationStyle } from '@/common/types';
 import { defaultImportSettings } from '@/config/editor';
-import { createAlignedReferenceBlob, imageFileToBeads } from '@/core/image-processing/imageToBeads';
-import { composeVisibleCells, normalizeProject, parseProjectJson, resizeCells } from '@/core/project';
+import { createAlignedReferenceBlob, imageFileToBeads } from '@/services/domain/image-processing/imageToBeads';
+import { composeVisibleCells, normalizeProject, parseProjectJson, resizeCells } from '@/services/domain/project';
 import { BaseService } from '@/service-core/base-service';
 import { ProjectService } from './project-service';
 import { LocalizationService } from './localization-service';
