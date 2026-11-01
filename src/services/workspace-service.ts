@@ -28,17 +28,17 @@ export class WorkspaceService extends BaseService {
     this.tools.resetClipboard();
     this.palette.resetSelection();
     this.project.replace(createProject(width, height), { recordHistory: true });
-    this.notice.show(this.localization.language === 'zh' ? `已创建 ${width} * ${height} 空白画布。` : `Blank ${width} x ${height} canvas created.`);
+    this.notice.show(this.localization.text.blankCanvasCreated(width, height));
   }
 
   clearCanvas(): void {
-    if (this.project.clearCanvas()) this.notice.show(this.localization.language === 'zh' ? '画布已清空。' : 'Canvas cleared.');
+    if (this.project.clearCanvas()) this.notice.show(this.localization.text.canvasCleared);
   }
 
   resizeCanvas(width: number, height: number): void {
     if (!this.project.resizeCanvas(width, height)) return;
     const next = this.project.snapshot.project;
-    this.notice.show(this.localization.language === 'zh' ? `画布已调整为 ${next.width} * ${next.height}。` : `Canvas resized to ${next.width} x ${next.height}.`);
+    this.notice.show(this.localization.text.canvasResized(next.width, next.height));
   }
 
   paintCell(

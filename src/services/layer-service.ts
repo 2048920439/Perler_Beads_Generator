@@ -164,7 +164,7 @@ export class LayerService extends BaseService {
   }
 
   private uniqueDuplicateName(baseName: string): string {
-    const suffix = this.localization.language === 'zh' ? '复制' : 'copy';
+    const suffix = this.localization.text.copySuffix;
     const names = new Set(this.layers.map((layer, index) => layerDisplayName(layer, index, this.localization.language)));
     for (let index = 1; index < 1000; index += 1) {
       const candidate = `${baseName}-${suffix}${index}`;

@@ -4,9 +4,12 @@ import { BaseService } from '@/service-core/base-service';
 import { LocalizationService } from './localization-service';
 
 export class NoticeService extends BaseService {
-  readonly snapshot$ = new BehaviorSubject(this.localization.text.workspaceReady);
+  readonly snapshot$: BehaviorSubject<string>;
 
-  constructor(private readonly localization: LocalizationService) { super(); }
+  constructor(private readonly localization: LocalizationService) {
+    super();
+    this.snapshot$ = new BehaviorSubject(this.localization.text.workspaceReady);
+  }
 
   show(message: string): void { this.snapshot$.next(message); }
 

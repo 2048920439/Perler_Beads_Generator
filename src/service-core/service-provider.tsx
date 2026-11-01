@@ -4,11 +4,12 @@ import type { DependencyContainer, InjectionToken } from 'tsyringe';
 import * as React from 'react';
 import { BaseService } from './base-service';
 import { createServiceScope } from './service-injector';
+import type { Language } from '@/config/localization';
 
 const ServiceContainerContext = React.createContext<DependencyContainer | null>(null);
 
-export function ServiceProvider({ children }: React.PropsWithChildren) {
-  const [scope] = React.useState(createServiceScope);
+export function ServiceProvider({ children, language }: React.PropsWithChildren<{ language: Language }>) {
+  const [scope] = React.useState(() => createServiceScope(language));
 
   React.useEffect(() => {
     scope.activate();

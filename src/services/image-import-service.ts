@@ -51,12 +51,12 @@ export class ImageImportService extends BaseService {
 
   openImage(file: File): void {
     if (!this.isSupportedImage(file)) {
-      this.notice.show(this.localization.language === 'zh' ? '请使用 PNG、JPG、JPEG 或 WebP 图片。' : 'Use a PNG, JPG, JPEG, or WebP image.');
+      this.notice.show(this.localization.text.unsupportedImage);
       return;
     }
     this.cancelPending();
     this.update({ pendingFile: file, pendingImageUrl: URL.createObjectURL(file), showGridEditor: true });
-    this.notice.show(this.localization.language === 'zh' ? `正在生成 ${file.name}...` : `Generating ${file.name}...`);
+    this.notice.show(this.localization.text.generatingImage(file.name));
   }
 
   async generate(width: number, height: number, corners: NonNullable<ConvertOptions['gridCorners']>): Promise<void> {
@@ -68,7 +68,7 @@ export class ImageImportService extends BaseService {
     }
     const requestId = ++this.generationRequestId;
     this.update({ isGenerating: true, showGridEditor: false });
-    this.notice.show(this.localization.language === 'zh' ? '正在本地更新拼豆图案...' : 'Updating bead pattern locally...');
+    this.notice.show(this.localization.text.updatingPattern);
     try {
       const result = await this.generateAndApply(pendingFile, {
         width, height, gridCorners: corners, maxColors, palette: this.palette.colors, generationStyle, backgroundMode,

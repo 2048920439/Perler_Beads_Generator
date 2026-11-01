@@ -9,7 +9,6 @@ import { LocalizationService } from '@/services/localization-service';
 
 export function ToolRail() {
   const localization = useService(LocalizationService);
-  const language = useObservableState(localization.snapshot$);
   const projectService = useService(ProjectService);
   const { project } = useObservableState(projectService.snapshot$);
   const toolService = useService(ToolService);
@@ -369,7 +368,7 @@ export function ToolRail() {
                   value={textToolSize}
                   onChange={(event) => setTextToolSize(toolService.normalizeTextSize(Number(event.target.value)))}
                 />
-                <span>{language === 'zh' ? '格' : 'cells'}</span>
+                <span>{localization.text.cells}</span>
               </label>
             </div>
             <input
@@ -392,7 +391,7 @@ export function ToolRail() {
                   value={textToolSpacing}
                   onChange={(event) => setTextToolSpacing(toolService.normalizeTextSpacing(Number(event.target.value)))}
                 />
-                <span>{language === 'zh' ? '格' : 'cells'}</span>
+                <span>{localization.text.cells}</span>
               </label>
             </div>
             <input

@@ -87,7 +87,7 @@ export default function WorkspaceCanvas() {
     palette.selectColor(colorId);
     toolService.setTool('pencil');
     toolService.closeOptions();
-    notice.show(localization.language === 'zh' ? '已从画布拾取颜色。' : 'Color picked from canvas.');
+    notice.show(localization.text.colorPicked);
   };
   const onHover = (cell: HoverCell | null) => view.setHoverCell(cell);
   const workspace = useService(WorkspaceService);

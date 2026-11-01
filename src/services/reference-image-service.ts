@@ -24,11 +24,11 @@ export class ReferenceImageService extends BaseService {
 
   load(file: File): void {
     if (!/^image\/(png|jpeg|jpg|webp)$/.test(file.type)) {
-      this.notice.show(this.localization.language === 'zh' ? '请使用 PNG、JPG、JPEG 或 WebP 图片。' : 'Use a PNG, JPG, JPEG, or WebP image.');
+      this.notice.show(this.localization.text.unsupportedImage);
       return;
     }
     this.setImage(file, file);
-    this.notice.show(this.localization.language === 'zh' ? `${file.name} 已设为参考图。` : `${file.name} set as reference image.`);
+      this.notice.show(this.localization.text.referenceImageSet(file.name));
   }
 
   setImage(file: File, blob: Blob): void {

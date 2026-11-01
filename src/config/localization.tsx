@@ -1,10 +1,15 @@
 export type Language = 'zh' | 'en';
 
+export const supportedLanguages = ['zh', 'en'] as const;
+export type Locale = (typeof supportedLanguages)[number];
+
+export function isLanguage(value: string): value is Language {
+  return supportedLanguages.includes(value as Language);
+}
+
 function formatBrushSize(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
-
-export const languageKey = 'perler-beads-generator:language';
 
 export const ui = {
     zh: {
@@ -148,6 +153,20 @@ export const ui = {
         hoverBoard: '移动到画布上',
         empty: '空',
         language: '语言',
+        editActions: '编辑操作',
+        canvasColors: '画布已用色号',
+        colorCount: (count: number) => `${count} 色`,
+        cells: '格',
+        colorPicked: '已从画布拾取颜色。',
+        unsupportedImage: '请使用 PNG、JPG、JPEG 或 WebP 图片。',
+        generatingImage: (name: string) => `正在生成 ${name}...`,
+        updatingPattern: '正在本地更新拼豆图案...',
+        referenceImageSet: (name: string) => `${name} 已设为参考图。`,
+        blankCanvasCreated: (width: number, height: number) => `已创建 ${width} * ${height} 空白画布。`,
+        canvasCleared: '画布已清空。',
+        canvasResized: (width: number, height: number) => `画布已调整为 ${width} * ${height}。`,
+        layerPrefix: '图层',
+        copySuffix: '复制',
         fit: '适配',
         close: '关闭',
         expandPreview: '放大 3D 预览',
@@ -363,6 +382,20 @@ export const ui = {
         hoverBoard: 'Hover the board',
         empty: 'empty',
         language: 'Language',
+        editActions: 'Edit actions',
+        canvasColors: 'Colors used on canvas',
+        colorCount: (count: number) => `${count} colors`,
+        cells: 'cells',
+        colorPicked: 'Color picked from canvas.',
+        unsupportedImage: 'Use a PNG, JPG, JPEG, or WebP image.',
+        generatingImage: (name: string) => `Generating ${name}...`,
+        updatingPattern: 'Updating bead pattern locally...',
+        referenceImageSet: (name: string) => `${name} set as reference image.`,
+        blankCanvasCreated: (width: number, height: number) => `Blank ${width} x ${height} canvas created.`,
+        canvasCleared: 'Canvas cleared.',
+        canvasResized: (width: number, height: number) => `Canvas resized to ${width} x ${height}.`,
+        layerPrefix: 'Layer',
+        copySuffix: 'copy',
         fit: 'Fit',
         close: 'Close',
         expandPreview: 'Expand 3D preview',

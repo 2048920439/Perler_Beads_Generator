@@ -65,7 +65,7 @@ export function SourcePanel() {
             <strong>{localization.text.preview3d}</strong>
             <span>{localization.text.liveBoard}</span>
           </div>
-          <small>{totalBeads} {language === 'zh' ? '颗' : 'beads'}</small>
+          <small>{localization.text.layerBeadCount(totalBeads)}</small>
         </div>
         <ThreePreview
           project={displayProject}

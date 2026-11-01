@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { sizePresets } from '@/config/editor';
 import { GitHubIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon } from '@/common/ui/EditorIcons';
 import { PrintExportMenu } from '@/components/export/PrintExportMenu';
@@ -20,6 +21,7 @@ export function EditorTopBar() {
   const localization = useService(LocalizationService);
   const notice = useService(NoticeService);
   const editor = useService(EditorService);
+  const router = useRouter();
   const language = useObservableState(localization.snapshot$);
   const { project, past, future, usage, totalBeads } = useObservableState(editor.snapshot$);
   const [width, onWidthChange] = useState(project.width);
@@ -28,7 +30,9 @@ export function EditorTopBar() {
   const selectedSizePreset = sizePresets.find((preset) => preset.width === width && preset.height === height)?.label ?? '';
   const defaultProjectName = useMemo(() => exports.defaultProjectName(language), [exports, language]);
   useEffect(() => { onWidthChange(project.width); onHeightChange(project.height); }, [project.width, project.height]);
-  const onLanguageChange = (nextLanguage: typeof language) => localization.setLanguage(nextLanguage);
+  const onLanguageChange = (nextLanguage: typeof language) => {
+    if (nextLanguage !== language) router.push(`/${nextLanguage}/`);
+  };
   const onPresetChange = (value: string) => {
     const preset = sizePresets.find((item) => item.label === value);
     if (preset) { onWidthChange(preset.width); onHeightChange(preset.height); }
@@ -100,7 +104,7 @@ export function EditorTopBar() {
         </div>
       </header>
 
-      <div className="project-toolbar" role="toolbar" aria-label={language === 'zh' ? '编辑操作' : 'Edit actions'}>
+      <div className="project-toolbar" role="toolbar" aria-label={localization.text.editActions}>
         <div className="project-actions">
           <button className="project-action-button primary-action" onClick={onNew}><PlusIcon /><span>{localization.text.new}</span></button>
           <button className="project-action-button" onClick={onClear}><TrashIcon /><span>{localization.text.clear}</span></button>

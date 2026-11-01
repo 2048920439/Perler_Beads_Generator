@@ -14,8 +14,9 @@ import { WorkspaceService } from '@/services/workspace-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
 import { EditorService } from '@/services/editor-service';
 import { BaseService } from './base-service';
+import type { Language } from '@/config/localization';
 
-export function createServiceScope() {
+export function createServiceScope(language: Language = 'zh') {
   const injector = container.createChildContainer();
   const services: BaseService[] = [];
   function register<T extends BaseService>(token: InjectionToken<T>, service: T): T {
@@ -24,7 +25,7 @@ export function createServiceScope() {
     return service;
   }
   const project = register(ProjectService, new ProjectService());
-  const localization = register(LocalizationService, new LocalizationService());
+  const localization = register(LocalizationService, new LocalizationService(language));
   const palette = register(PaletteService, new PaletteService());
   register(WorkspaceViewService, new WorkspaceViewService());
   const notice = register(NoticeService, new NoticeService(localization));

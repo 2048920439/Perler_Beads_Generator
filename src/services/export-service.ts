@@ -43,7 +43,7 @@ export class ExportService extends BaseService {
     const exportOptions = {
       ...options,
       projectName: options.projectName?.trim() || this.defaultProjectName(),
-      layerLabelPrefix: this.localization.language === 'en' ? 'Layer' : '图层',
+      layerLabelPrefix: this.localization.text.layerPrefix,
     };
     if (options.format === 'pdf') downloadPrintPdf(this.projectService.snapshot.project, exportOptions);
     else downloadPrintPng(this.projectService.snapshot.project, exportOptions);

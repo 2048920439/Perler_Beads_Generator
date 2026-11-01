@@ -21,7 +21,6 @@ export function RightPanel() {
   const toolService = useService(ToolService);
   const view = useService(WorkspaceViewService);
   const editor = useService(EditorService);
-  const language = useObservableState(localization.snapshot$);
   const notice = useObservableState(noticeService.snapshot$);
   const { mode: paletteMode, selectedColorId } = useObservableState(paletteService.snapshot$);
   const { tool } = useObservableState(toolService.snapshot$);
@@ -104,8 +103,8 @@ export function RightPanel() {
 
     <details className="panel-section canvas-colors-section" open>
       <summary className="canvas-colors-toggle">
-        <h2>{language === 'zh' ? '画布已用色号' : 'Colors used on canvas'}</h2>
-        <span>{usage.length} {language === 'zh' ? '色' : 'colors'}</span>
+        <h2>{localization.text.canvasColors}</h2>
+        <span>{localization.text.colorCount(usage.length)}</span>
       </summary>
       <div className="usage-list canvas-colors-list">
         {usage.map((row) => (

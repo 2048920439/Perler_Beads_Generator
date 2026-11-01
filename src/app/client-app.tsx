@@ -3,6 +3,7 @@
 import * as React from 'react';
 import App from '../presentation/App';
 import { ServiceProvider } from '../service-core';
+import type { Language } from '@/config/localization';
 
 type ErrorBoundaryState = { error: Error | null };
 
@@ -28,11 +29,11 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBou
   }
 }
 
-export default function ClientApp() {
+export default function ClientApp({ language }: { language: Language }) {
   return (
     <React.StrictMode>
       <AppErrorBoundary>
-        <ServiceProvider>
+        <ServiceProvider language={language}>
           <App />
         </ServiceProvider>
       </AppErrorBoundary>
