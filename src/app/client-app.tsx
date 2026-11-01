@@ -4,10 +4,11 @@ import * as React from 'react';
 import App from '../presentation/App';
 import { ServiceProvider } from '../service-core';
 import type { Language } from '@/config/localization';
+import { ui } from '@/config/localization';
 
 type ErrorBoundaryState = { error: Error | null };
 
-class AppErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBoundaryState> {
+class AppErrorBoundary extends React.Component<React.PropsWithChildren<{ language: Language }>, ErrorBoundaryState> {
   state: ErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -16,12 +17,13 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBou
 
   render() {
     if (this.state.error) {
+      const text = ui[this.props.language];
       return (
         <main className="app-fallback">
-          <h1>Perler Beads Generator</h1>
-          <p>Something went wrong. Please reload the page.</p>
+          <h1>{text.errorTitle}</h1>
+          <p>{text.errorDescription}</p>
           <pre>{this.state.error.message}</pre>
-          <button onClick={() => window.location.reload()}>Reload</button>
+          <button onClick={() => window.location.reload()}>{text.reload}</button>
         </main>
       );
     }
@@ -32,7 +34,7 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBou
 export default function ClientApp({ language }: { language: Language }) {
   return (
     <React.StrictMode>
-      <AppErrorBoundary>
+      <AppErrorBoundary language={language}>
         <ServiceProvider language={language}>
           <App />
         </ServiceProvider>

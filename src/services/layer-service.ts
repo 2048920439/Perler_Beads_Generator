@@ -24,7 +24,7 @@ export class LayerService extends BaseService {
     return this.project.layers?.length ? this.project.layers : [];
   }
 
-  addLayer(name = `${this.localization.text.layers} ${this.layers.length + 1}`): void {
+  addLayer(name = `${this.localization.text.layerPrefix} ${this.layers.length + 1}`): void {
     const project = this.project;
     const nextLayer = createLayer(project.width, project.height, name);
     this.commit();
@@ -148,7 +148,8 @@ export class LayerService extends BaseService {
   renameLayer(layer: BeadLayer, index: number, name: string): void {
     const nextName = name.trim();
     if (!nextName) return;
-    const systemName = nextName === `图层 ${index + 1}` || nextName === `Layer ${index + 1}`;
+    const systemName = nextName === this.localization.text.layerFallbackPrefix(index)
+      || nextName === `${this.localization.text.layerPrefix} ${index + 1}`;
     if (systemName && !layer.customName) return;
     this.updateLayer(layer.id, { name: nextName, customName: !systemName });
   }

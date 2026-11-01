@@ -1,6 +1,31 @@
 import { getColor, mappedCode } from '@/services/domain/palette';
 import type { BeadLayer, BeadProject, UsageRow } from '@/common/types';
 
+export type ExportLabels = {
+  exportAppName: string;
+  defaultEditRecordName: string;
+  defaultPatternName: string;
+  exportEditSuffix: string;
+  exportUsageSuffix: string;
+  exportBy: (name: string) => string;
+  exportSummaryProject: string;
+  exportSummaryBrand: string;
+  exportSummaryCanvas: string;
+  exportSummaryTotal: string;
+  exportSummaryColors: string;
+  exportSummaryPerPack: string;
+  exportSheetTotal: string;
+  exportSheetLabel: string;
+  exportColumnCode: string;
+  exportColumnName: string;
+  exportColumnHex: string;
+  exportColumnCount: string;
+  exportColumnPacks: string;
+  exportUnitBeadsPerPack: (count: number) => string;
+  exportTitleMeta: (colors: number, beads: number) => string;
+  layerFallbackPrefix: (index: number) => string;
+};
+
 export type PrintExportOptions = {
   format?: 'png' | 'pdf';
   exportBounds?: 'pattern' | 'canvas';
@@ -10,6 +35,7 @@ export type PrintExportOptions = {
   authorName?: string;
   layerName?: string;
   layerLabelPrefix?: string;
+  labels?: ExportLabels;
 };
 
 const PRINT_EXPORT_PPI = 330;
@@ -17,22 +43,22 @@ const CSS_PIXEL_PPI = 96;
 const MAX_EXPORT_CANVAS_SIDE = 12000;
 const PRINT_EXPORT_SCALE = PRINT_EXPORT_PPI / CSS_PIXEL_PPI;
 
-export function downloadProjectJson(project: BeadProject): void {
-  downloadBlob(`${safeName(project.name || '\u62fc\u8c46\u7f16\u8f91\u8bb0\u5f55')}-\u7f16\u8f91\u8bb0\u5f55_perler.json`, JSON.stringify(project, null, 2), 'application/json');
+export function downloadProjectJson(project: BeadProject, labels: ExportLabels): void {
+  downloadBlob(`${safeName(project.name || labels.defaultEditRecordName)}-${labels.exportEditSuffix}_perler.json`, JSON.stringify(project, null, 2), 'application/json');
 }
 
-export function downloadUsageCsv(project: BeadProject, usage: UsageRow[]): void {
+export function downloadUsageCsv(project: BeadProject, usage: UsageRow[], labels: ExportLabels): void {
   const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
   const summaryRows = [
-    ['\u9879\u76ee\u540d\u79f0', project.name],
-    ['\u8272\u53f7\u54c1\u724c', project.activeBrand],
-    ['\u753b\u5e03\u5c3a\u5bf8', `${project.width} x ${project.height}`],
-    ['\u603b\u9897\u6570', totalBeads],
-    ['\u989c\u8272\u6570', usage.length],
-    ['\u6bcf\u5305\u6570\u91cf', `${project.settings.beadsPerPack} \u9897/\u5305`],
+    [labels.exportSummaryProject, project.name],
+    [labels.exportSummaryBrand, project.activeBrand],
+    [labels.exportSummaryCanvas, `${project.width} x ${project.height}`],
+    [labels.exportSummaryTotal, totalBeads],
+    [labels.exportSummaryColors, usage.length],
+    [labels.exportSummaryPerPack, labels.exportUnitBeadsPerPack(project.settings.beadsPerPack)],
     [],
   ];
-  const header = ['\u8272\u53f7\u54c1\u724c', '\u8272\u53f7', '\u989c\u8272\u540d\u79f0', 'HEX', '\u6570\u91cf', '\u9884\u8ba1\u5305\u6570'];
+  const header = [labels.exportSummaryBrand, labels.exportColumnCode, labels.exportColumnName, labels.exportColumnHex, labels.exportColumnCount, labels.exportColumnPacks];
   const rows = usage.map((row) =>
     [
       project.activeBrand,
@@ -50,23 +76,23 @@ export function downloadUsageCsv(project: BeadProject, usage: UsageRow[]): void 
     header.map(csvCell).join(','),
     ...rows,
   ].join('\n');
-  downloadBlob(`${safeName(project.name || '\u62fc\u8c46\u56fe\u7eb8')}-\u7528\u91cf\u6e05\u5355.csv`, `\ufeff${content}`, 'text/csv;charset=utf-8');
+  downloadBlob(`${safeName(project.name || labels.defaultPatternName)}-${labels.exportUsageSuffix}.csv`, `\ufeff${content}`, 'text/csv;charset=utf-8');
 }
 
-export function downloadUsageWorkbook(project: BeadProject): void {
+export function downloadUsageWorkbook(project: BeadProject, labels: ExportLabels): void {
   const usageLayers = (project.layers ?? []).filter((layer) => layer.includeInUsage);
   const sheets = [
     {
-      name: '\u603b\u6570',
-      rows: usageSheetRows(project, '\u603b\u6570', summarizeLayerUsage(project, usageLayers)),
+      name: labels.exportSheetTotal,
+      rows: usageSheetRows(project, labels.exportSheetTotal, summarizeLayerUsage(project, usageLayers), labels),
     },
     ...usageLayers.map((layer, index) => ({
-      name: usageLayerSheetName(layer, index),
-      rows: usageSheetRows(project, usageLayerSheetName(layer, index), summarizeLayerUsage(project, [layer])),
+      name: usageLayerSheetName(layer, index, labels),
+      rows: usageSheetRows(project, usageLayerSheetName(layer, index, labels), summarizeLayerUsage(project, [layer]), labels),
     })),
   ];
   const workbook = createXlsxWorkbook(sheets);
-  downloadBlob(`${safeName(project.name || '\u62fc\u8c46\u56fe\u7eb8')}-\u7528\u91cf\u6e05\u5355.xlsx`, workbook, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  downloadBlob(`${safeName(project.name || labels.defaultPatternName)}-${labels.exportUsageSuffix}.xlsx`, workbook, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
 export function downloadPrintPng(project: BeadProject, options: PrintExportOptions = { showColorCodes: true, showGuideLines: true }): void {
@@ -114,7 +140,7 @@ function renderPrintCanvas(project: BeadProject, options: PrintExportOptions): H
   canvas.width = Math.ceil(width * scale);
   canvas.height = Math.ceil(height * scale);
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canvas is not available.');
+  if (!context) throw new Error('CANVAS_UNAVAILABLE');
   context.scale(scale, scale);
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
@@ -122,7 +148,9 @@ function renderPrintCanvas(project: BeadProject, options: PrintExportOptions): H
   const gridLeft = margin + labelBand;
   const gridTop = margin + headerHeight + labelBand;
   const displayName = printDisplayName(options);
-  const title = `${displayName} [${printProject.width}x${printProject.height}/${printProject.activeBrand}/${usage.length}\u8272/\u5171${usage.reduce((sum, row) => sum + row.count, 0)}\u9897]`;
+  const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
+  const titleMeta = options.labels?.exportTitleMeta(usage.length, totalBeads) ?? `${usage.length}/${totalBeads}`;
+  const title = `${displayName} [${printProject.width}x${printProject.height}/${printProject.activeBrand}/${titleMeta}]`;
   context.fillStyle = '#111827';
   context.font = '700 26px Arial, "Microsoft YaHei", sans-serif';
   context.textAlign = 'left';
@@ -130,12 +158,12 @@ function renderPrintCanvas(project: BeadProject, options: PrintExportOptions): H
   context.fillText(title, margin, margin + 16);
   context.fillStyle = '#6b7280';
   context.font = '12px Arial, "Microsoft YaHei", sans-serif';
-  context.fillText('Perler Beads Generator', margin, margin + 40);
+  context.fillText(options.labels?.exportAppName ?? '', margin, margin + 40);
   if (options.authorName?.trim()) {
     context.textAlign = 'right';
     context.fillStyle = '#4b5563';
     context.font = 'italic 700 18px Arial, "Microsoft YaHei", sans-serif';
-    context.fillText(`Design by ${options.authorName.trim()}`, width - margin, margin + 28);
+    context.fillText(options.labels?.exportBy(options.authorName.trim()) ?? options.authorName.trim(), width - margin, margin + 28);
   }
 
   drawCoordinateBands(context, printProject, gridLeft, gridTop, labelBand, cellSize);
@@ -329,7 +357,7 @@ function printLayerProjects(project: BeadProject, options: PrintExportOptions): 
     .filter(({ layer }) => layer.cells.some(Boolean));
   if (nonEmptyLayers.length <= 1) return [{ project }];
   return nonEmptyLayers.map(({ layer, index }) => {
-    const layerName = printLayerName(layer, index, options.layerLabelPrefix);
+    const layerName = printLayerName(layer, index, options.layerLabelPrefix, options.labels);
     const layerCells = normalizeLayerCells(layer.cells, project.width, project.height);
     const printLayer = {
       ...layer,
@@ -348,8 +376,8 @@ function printLayerProjects(project: BeadProject, options: PrintExportOptions): 
   });
 }
 
-function printLayerName(layer: BeadLayer, index: number, layerLabelPrefix = '图层'): string {
-  const fallback = layerLabelPrefix === 'Layer' ? `Layer ${index + 1}` : `${layerLabelPrefix}${index + 1}`;
+function printLayerName(layer: BeadLayer, index: number, layerLabelPrefix = '', labels?: ExportLabels): string {
+  const fallback = labels?.layerFallbackPrefix(index) ?? `${layerLabelPrefix}${index + 1}`;
   const custom = layer.customName && layer.name.trim() ? layer.name.trim() : '';
   return custom ? `${fallback}-${custom}` : fallback;
 }
@@ -365,18 +393,19 @@ function usageSheetRows(
   project: BeadProject,
   sheetTitle: string,
   usage: Array<{ color: NonNullable<ReturnType<typeof getColor>>; count: number; packs: number }>,
+  labels: ExportLabels,
 ): UsageWorkbookRow[] {
   const totalBeads = usage.reduce((sum, row) => sum + row.count, 0);
   return [
-    ['\u9879\u76ee\u540d\u79f0', project.name || '\u62fc\u8c46\u56fe\u7eb8'],
-    ['\u8868\u683c', sheetTitle],
-    ['\u8272\u53f7\u54c1\u724c', project.activeBrand],
-    ['\u753b\u5e03\u5c3a\u5bf8', `${project.width} x ${project.height}`],
-    ['\u603b\u9897\u6570', totalBeads],
-    ['\u989c\u8272\u6570', usage.length],
-    ['\u6bcf\u5305\u6570\u91cf', `${project.settings.beadsPerPack} \u9897/\u5305`],
+    [labels.exportSummaryProject, project.name || labels.defaultPatternName],
+    [labels.exportSheetLabel, sheetTitle],
+    [labels.exportSummaryBrand, project.activeBrand],
+    [labels.exportSummaryCanvas, `${project.width} x ${project.height}`],
+    [labels.exportSummaryTotal, totalBeads],
+    [labels.exportSummaryColors, usage.length],
+    [labels.exportSummaryPerPack, labels.exportUnitBeadsPerPack(project.settings.beadsPerPack)],
     [],
-    ['\u8272\u53f7\u54c1\u724c', '\u8272\u53f7', '\u989c\u8272\u540d\u79f0', 'HEX', '\u6570\u91cf', '\u9884\u8ba1\u5305\u6570'],
+    [labels.exportSummaryBrand, labels.exportColumnCode, labels.exportColumnName, labels.exportColumnHex, labels.exportColumnCount, labels.exportColumnPacks],
     ...usage.map((row) => [
       project.activeBrand,
       mappedCode(row.color, project.activeBrand),
@@ -407,8 +436,8 @@ function summarizeLayerUsage(
     .sort((a, b) => b.count - a.count || a.color.primaryCode.localeCompare(b.color.primaryCode));
 }
 
-function usageLayerSheetName(layer: BeadLayer, index: number): string {
-  const name = layer.customName && layer.name.trim() ? layer.name.trim() : `\u56fe\u5c42 ${index + 1}`;
+function usageLayerSheetName(layer: BeadLayer, index: number, labels: ExportLabels): string {
+  const name = layer.customName && layer.name.trim() ? layer.name.trim() : labels.layerFallbackPrefix(index);
   return name;
 }
 
@@ -654,12 +683,12 @@ function safeName(name: string): string {
 }
 
 function printDisplayName(options: PrintExportOptions): string {
-  const baseName = options.projectName?.trim() || defaultPrintName();
+  const baseName = options.projectName?.trim() || options.labels?.defaultPatternName || defaultPrintName();
   return options.layerName ? `${baseName} ${options.layerName}` : baseName;
 }
 
 function printFileName(options: PrintExportOptions): string {
-  const baseName = options.projectName?.trim() || defaultPrintName();
+  const baseName = options.projectName?.trim() || options.labels?.defaultPatternName || defaultPrintName();
   return safeName(options.layerName ? `${baseName}_${options.layerName}` : baseName);
 }
 
@@ -672,7 +701,7 @@ function defaultPrintName(): string {
     String(now.getHours()).padStart(2, '0'),
     String(now.getMinutes()).padStart(2, '0'),
   ].join('');
-  return `\u62fc\u8c46\u56fe\u7eb8_${stamp}`;
+  return stamp;
 }
 
 function dataUrlToBytes(dataUrl: string): Uint8Array {

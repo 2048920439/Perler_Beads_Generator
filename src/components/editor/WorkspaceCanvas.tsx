@@ -757,7 +757,7 @@ export default function WorkspaceCanvas() {
       {referenceImageAdjusting && referenceImageVisible && (
         <div className="reference-adjust-hint">{localization.text.referenceAdjustHint}</div>
       )}
-      <div className="zoom-controls" aria-label="Canvas zoom controls">
+      <div className="zoom-controls" aria-label={localization.text.canvasZoomControls}>
         <button onClick={() => stepZoom(0.9)}>-</button>
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => stepZoom(1.1)}>+</button>

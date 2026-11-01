@@ -4,7 +4,7 @@ import type { BeadLayer, BeadProject } from '@/common/types';
 export const autosaveKey = 'perler-beads-generator:draft';
 const maxProjectDimension = 180;
 
-export function createProject(width = 52, height = 52, name = 'Untitled Pattern'): BeadProject {
+export function createProject(width = 52, height = 52, name = ''): BeadProject {
   const now = new Date().toISOString();
   const cells = emptyCells(width, height);
   return {
@@ -18,7 +18,7 @@ export function createProject(width = 52, height = 52, name = 'Untitled Pattern'
     layers: [
       {
         id: 'base',
-        name: 'Pattern',
+        name: '',
         customName: false,
         visible: true,
         locked: false,
@@ -159,11 +159,11 @@ export function parseProjectJson(raw: string): BeadProject {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error('This file is not valid JSON.');
+    throw new Error('INVALID_JSON');
   }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('This file does not contain a valid bead project.');
+    throw new Error('INVALID_PROJECT');
   }
 
   const candidate = parsed as Partial<BeadProject>;
@@ -180,7 +180,7 @@ export function parseProjectJson(raw: string): BeadProject {
     height > maxProjectDimension ||
     (!hasCells && !hasLayers)
   ) {
-    throw new Error('This file does not contain a valid bead project.');
+    throw new Error('INVALID_PROJECT');
   }
 
   return normalizeProject({ ...candidate, width, height } as BeadProject);

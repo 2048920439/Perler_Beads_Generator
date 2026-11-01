@@ -48,7 +48,7 @@ export async function imageFileToBeads(file: File, options: ConvertOptions): Pro
   canvas.width = sourceWidth;
   canvas.height = sourceHeight;
   const context = canvas.getContext('2d', { willReadFrequently: true });
-  if (!context) throw new Error('Canvas is not available.');
+  if (!context) throw new Error('CANVAS_UNAVAILABLE');
   context.imageSmoothingEnabled = true;
   context.drawImage(image, 0, 0, sourceWidth, sourceHeight);
   const data = context.getImageData(0, 0, sourceWidth, sourceHeight).data;
@@ -84,7 +84,7 @@ export async function createAlignedReferenceBlob(
   canvas.width = projectWidth * resolution;
   canvas.height = projectHeight * resolution;
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canvas is not available.');
+  if (!context) throw new Error('CANVAS_UNAVAILABLE');
   const left = Math.min(...corners.map((point) => point.x)) * image.naturalWidth;
   const right = Math.max(...corners.map((point) => point.x)) * image.naturalWidth;
   const top = Math.min(...corners.map((point) => point.y)) * image.naturalHeight;
@@ -103,7 +103,7 @@ export async function createAlignedReferenceBlob(
     height * resolution,
   );
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('Could not create the aligned reference image.');
+  if (!blob) throw new Error('REFERENCE_IMAGE_CREATE_FAILED');
   return blob;
 }
 
@@ -117,7 +117,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Could not load this image.'));
+      reject(new Error('IMAGE_LOAD_FAILED'));
     };
     image.src = url;
   });

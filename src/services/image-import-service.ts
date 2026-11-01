@@ -82,7 +82,7 @@ export class ImageImportService extends BaseService {
       this.reference.setImage(pendingFile, result.referenceBlob);
       this.notice.generated(result.colorsUsed, result.totalBeads);
     } catch (error) {
-      if (requestId === this.generationRequestId) this.notice.show(error instanceof Error ? error.message : 'Could not generate this image.');
+      if (requestId === this.generationRequestId) this.notice.show(this.localizeGenerationError(error));
     } finally {
       if (requestId === this.generationRequestId) this.update({ isGenerating: false });
     }
@@ -166,5 +166,13 @@ export class ImageImportService extends BaseService {
 
   private update(changes: Partial<ImportSnapshot>): void {
     this.snapshot$.next({ ...this.snapshot, ...changes });
+  }
+
+  private localizeGenerationError(error: unknown): string {
+    if (!(error instanceof Error)) return this.localization.text.generationFailed;
+    if (error.message === 'CANVAS_UNAVAILABLE') return this.localization.text.canvasUnavailable;
+    if (error.message === 'REFERENCE_IMAGE_CREATE_FAILED') return this.localization.text.referenceImageCreateFailed;
+    if (error.message === 'IMAGE_LOAD_FAILED') return this.localization.text.imageLoadFailed;
+    return this.localization.text.generationFailed;
   }
 }

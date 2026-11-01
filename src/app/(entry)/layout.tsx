@@ -4,7 +4,7 @@ import '../../styles.css';
 
 export const metadata: Metadata = {
   title: ui.zh.appName,
-  description: '从图片创建可打印的拼豆图纸。',
+  description: ui.zh.description,
 };
 
 export default function EntryLayout({ children }: Readonly<{ children: React.ReactNode }>) {

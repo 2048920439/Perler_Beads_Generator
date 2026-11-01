@@ -14,9 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const dictionary = await getDictionary(lang);
   return {
     title: dictionary.appName,
-    description: lang === 'zh'
-      ? '从图片创建可打印的拼豆图纸。'
-      : 'Create printable Perler bead patterns from images.',
+    description: dictionary.description,
   };
 }
 

@@ -91,7 +91,7 @@ export function SourcePanel() {
           {pendingImageUrl && <Image src={pendingImageUrl} alt="" width={42} height={42} unoptimized />}
           <span className="upload-zone-text">
             <strong>{isGenerating ? localization.text.preparingPattern : pendingFile ? pendingFile.name : localization.text.uploadImage}</strong>
-            <span>{isGenerating ? pendingFile?.name : pendingFile ? 'PNG / JPG / WebP' : 'PNG, JPG, WebP'}</span>
+            <span>{isGenerating ? pendingFile?.name : pendingFile ? localization.text.imageFormatHint : localization.text.imageFormatList}</span>
           </span>
         </button>
 
@@ -101,7 +101,7 @@ export function SourcePanel() {
               {localization.text.width}
               <span className="help-dot image-help-dot" {...imageHelpProps(localization.text.heightFromRatio)}>?</span>
             </span>
-            <input aria-label="Output width" type="number" min={8} max={180} value={convertWidth} onChange={(event) => onConvertWidthChange(Number(event.target.value))} />
+            <input aria-label={localization.text.outputWidth} type="number" min={8} max={180} value={convertWidth} onChange={(event) => onConvertWidthChange(Number(event.target.value))} />
           </label>
           <label className="image-range-field">
             <span>
@@ -111,7 +111,7 @@ export function SourcePanel() {
               </span>
               <strong>{maxColors}</strong>
             </span>
-            <input aria-label="Color limit" type="range" min={6} max={48} step={1} value={maxColors} onChange={(event) => onMaxColorsChange(Number(event.target.value))} />
+            <input aria-label={localization.text.colors} type="range" min={6} max={48} step={1} value={maxColors} onChange={(event) => onMaxColorsChange(Number(event.target.value))} />
           </label>
           <label className="image-range-field">
             <span>
@@ -121,14 +121,14 @@ export function SourcePanel() {
               </span>
               <strong>{tolerance}</strong>
             </span>
-            <input aria-label="Background tolerance" type="range" min={0} max={120} step={1} value={tolerance} onChange={(event) => onToleranceChange(Number(event.target.value))} />
+            <input aria-label={localization.text.backgroundTolerance} type="range" min={0} max={120} step={1} value={tolerance} onChange={(event) => onToleranceChange(Number(event.target.value))} />
           </label>
         </div>
 
         <label className="stacked-field image-style-field">
           <span>{localization.text.generationStyle}</span>
           <select
-            aria-label="Generation style"
+            aria-label={localization.text.generationStyleLabel}
             value={generationStyle}
             onChange={(event) => onGenerationStyleChange(event.target.value as GenerationStyle)}
           >
@@ -139,7 +139,7 @@ export function SourcePanel() {
 
         <label className="stacked-field image-background-field">
           <span>{localization.text.background}</span>
-          <select aria-label="Background handling" value={backgroundMode} onChange={(event) => onBackgroundModeChange(event.target.value as BackgroundMode)}>
+          <select aria-label={localization.text.backgroundHandling} value={backgroundMode} onChange={(event) => onBackgroundModeChange(event.target.value as BackgroundMode)}>
             <option value="keep">{localization.text.keepBackground}</option>
             <option value="remove-white">{localization.text.removeWhite}</option>
           </select>
@@ -159,7 +159,7 @@ export function SourcePanel() {
           {referenceImageUrl && <Image src={referenceImageUrl} alt="" width={42} height={42} unoptimized />}
           <span className="upload-zone-text">
             <strong>{referenceFile ? referenceFile.name : localization.text.uploadReferenceImage}</strong>
-            <span>{referenceFile ? 'PNG / JPG / WebP' : 'PNG, JPG, WebP'}</span>
+            <span>{referenceFile ? localization.text.imageFormatHint : localization.text.imageFormatList}</span>
           </span>
         </button>
 
@@ -181,7 +181,7 @@ export function SourcePanel() {
             <strong>{Math.round((1 - referenceOpacity) * 100)}%</strong>
           </span>
           <input
-            aria-label="Reference opacity"
+            aria-label={localization.text.referenceOpacityLabel}
             type="range"
             min={0.1}
             max={0.95}

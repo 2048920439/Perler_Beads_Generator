@@ -218,7 +218,7 @@ export default function ThreePreview({ project, title, emptyLabel, closeLabel, e
 
   return (
     <>
-      <div className="three-preview" ref={hostRef} aria-label="Live 3D bead preview">
+      <div className="three-preview" ref={hostRef} aria-label={title}>
         {beadCount === 0 && (
           <div className="three-preview-empty" aria-hidden="true">
             <div className="three-preview-empty-icon">

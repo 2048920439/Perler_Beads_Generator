@@ -21,6 +21,6 @@ export function ServiceProvider({ children, language }: React.PropsWithChildren<
 
 export function useService<T extends BaseService>(token: InjectionToken<T>): T {
   const injector = React.useContext(ServiceContainerContext);
-  if (!injector) throw new Error('useService must be used inside ServiceProvider.');
+  if (!injector) throw new Error('SERVICE_PROVIDER_REQUIRED');
   return injector.resolve<T>(token);
 }

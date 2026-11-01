@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ui, type Language } from '@/config/localization';
 
 export type ImagePoint = { x: number; y: number };
 export type GridCorners = [ImagePoint, ImagePoint, ImagePoint, ImagePoint];
@@ -10,18 +11,14 @@ type Props = {
   initialWidth: number;
   onCancel: () => void;
   onConfirm: (width: number, height: number, corners: GridCorners) => void;
-  language: 'zh' | 'en';
+  language: Language;
 };
 
 type View = { scale: number; x: number; y: number };
 type Drag = { kind: 'pan' | 'corner' | 'pinch'; pointerId: number; startX: number; startY: number; origin: View; corner?: number; distance?: number };
 
-const labels = {
-  zh: { title: '校准图片网格', cancel: '取消', apply: '识别图案', rows: '行数', columns: '列数', zoomOut: '缩小', zoomIn: '放大', fit: '适合画布', image: '图片', grid: '网格', dragHint: '拖动图片平移，滚轮或双指缩放；拖动网格角点调整范围。' },
-  en: { title: 'Align image grid', cancel: 'Cancel', apply: 'Recognize pattern', rows: 'Rows', columns: 'Columns', zoomOut: 'Zoom out', zoomIn: 'Zoom in', fit: 'Fit view', image: 'Image', grid: 'Grid', dragHint: 'Drag to pan the image, scroll or pinch to zoom; drag a grid corner to resize.' },
-};
-
 export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, language }: Props) {
+  const labels = ui[language].imageGrid;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -215,28 +212,28 @@ export function ImageGridEditor({ file, initialWidth, onCancel, onConfirm, langu
   }
 
   return (
-    <div className="image-grid-editor" role="dialog" aria-modal="true" aria-label={labels[language].title}>
+    <div className="image-grid-editor" role="dialog" aria-modal="true" aria-label={labels.title}>
       <header className="image-grid-editor-header">
-        <strong>{labels[language].title}</strong>
+        <strong>{labels.title}</strong>
         <div className="image-grid-editor-actions">
-          <button type="button" onClick={onCancel}>{labels[language].cancel}</button>
-          <button type="button" className="primary" onClick={() => onConfirm(columns, rows, corners)}>{labels[language].apply}</button>
+          <button type="button" onClick={onCancel}>{labels.cancel}</button>
+          <button type="button" className="primary" onClick={() => onConfirm(columns, rows, corners)}>{labels.apply}</button>
         </div>
       </header>
       <div className="image-grid-editor-body">
         <div className="image-grid-editor-stage" ref={stageRef}>
           <canvas ref={canvasRef} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(event) => { pointersRef.current.delete(event.pointerId); dragRef.current = null; }} onPointerCancel={(event) => { pointersRef.current.delete(event.pointerId); dragRef.current = null; }} onWheel={(event) => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.12 : 0.89, event.clientX - rect.left, event.clientY - rect.top); }} />
           <div className="image-grid-zoom">
-            <button type="button" title={labels[language].zoomOut} onClick={() => zoom(0.8)}>−</button>
-            <button type="button" title={labels[language].zoomIn} onClick={() => zoom(1.25)}>+</button>
-            <button type="button" title={labels[language].fit} onClick={fitView}>⌂</button>
+            <button type="button" title={labels.zoomOut} onClick={() => zoom(0.8)}>−</button>
+            <button type="button" title={labels.zoomIn} onClick={() => zoom(1.25)}>+</button>
+            <button type="button" title={labels.fit} onClick={fitView}>⌂</button>
           </div>
         </div>
         <aside className="image-grid-editor-sidebar">
-          <p>{labels[language].dragHint}</p>
-          <label>{labels[language].columns}<input type="text" inputMode="numeric" pattern="[0-9]*" value={columnsInput} onChange={(event) => setColumnsInput(event.target.value)} onBlur={commitColumnsInput} /></label>
-          <label>{labels[language].rows}<input type="text" inputMode="numeric" pattern="[0-9]*" value={rowsInput} onChange={(event) => setRowsInput(event.target.value)} onBlur={commitRowsInput} /></label>
-          <div className="image-grid-editor-legend"><span /><small>{labels[language].image} · {labels[language].grid}</small></div>
+          <p>{labels.dragHint}</p>
+          <label>{labels.columns}<input type="text" inputMode="numeric" pattern="[0-9]*" value={columnsInput} onChange={(event) => setColumnsInput(event.target.value)} onBlur={commitColumnsInput} /></label>
+          <label>{labels.rows}<input type="text" inputMode="numeric" pattern="[0-9]*" value={rowsInput} onChange={(event) => setRowsInput(event.target.value)} onBlur={commitRowsInput} /></label>
+          <div className="image-grid-editor-legend"><span /><small>{labels.image} · {labels.grid}</small></div>
         </aside>
       </div>
     </div>

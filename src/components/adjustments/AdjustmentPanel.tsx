@@ -73,7 +73,7 @@ export function AdjustmentPanel() {
         </div>
         <span>{localization.text.colorCleanupHint}</span>
         <input
-          aria-label="Color cleanup strength"
+          aria-label={localization.text.colorCleanup}
           type="range"
           min={1}
           max={4}
@@ -92,7 +92,7 @@ export function AdjustmentPanel() {
         </div>
         <span>{localization.text.colorLimitHint}</span>
         <input
-          aria-label="Layer color limit"
+          aria-label={localization.text.colorLimit}
           type="range"
           min={2}
           max={48}

@@ -1,33 +1,38 @@
 import { BehaviorSubject } from 'rxjs';
-import { ui } from '@/config/localization';
 import { BaseService } from '@/service-core/base-service';
 import { LocalizationService } from './localization-service';
 
 export class NoticeService extends BaseService {
   readonly snapshot$: BehaviorSubject<string>;
+  private generatedState: { colors: number; beads: number } | null = null;
+  private readyState = true;
 
   constructor(private readonly localization: LocalizationService) {
     super();
     this.snapshot$ = new BehaviorSubject(this.localization.text.workspaceReady);
   }
 
-  show(message: string): void { this.snapshot$.next(message); }
+  show(message: string): void {
+    this.generatedState = null;
+    this.readyState = false;
+    this.snapshot$.next(message);
+  }
 
   protected onActivate(): void {
-    this.own(this.localization.snapshot$.subscribe((language) => {
-      const current = this.snapshot$.getValue();
-      if (current === ui.zh.workspaceReady || current === ui.en.workspaceReady) {
-        this.show(this.localization.text.workspaceReady);
+    this.own(this.localization.snapshot$.subscribe(() => {
+      if (this.generatedState) {
+        this.snapshot$.next(this.localization.text.generatedPattern(this.generatedState.colors, this.generatedState.beads));
         return;
       }
-      const generated = current.match(/^(\d+) (?:色 - (\d+) 颗 - 可编辑图案已生成。|colors - (\d+) beads - editable pattern ready\.)$/);
-      if (generated) this.generated(Number(generated[1]), Number(generated[2] ?? generated[3]), language);
+      if (this.readyState) {
+        this.snapshot$.next(this.localization.text.workspaceReady);
+      }
     }));
   }
 
-  generated(colors: number, beads: number, language = this.localization.language): void {
-    this.show(language === 'zh'
-      ? `${colors} 色 - ${beads} 颗 - 可编辑图案已生成。`
-      : `${colors} colors - ${beads} beads - editable pattern ready.`);
+  generated(colors: number, beads: number): void {
+    this.readyState = false;
+    this.generatedState = { colors, beads };
+    this.snapshot$.next(this.localization.text.generatedPattern(colors, beads));
   }
 }

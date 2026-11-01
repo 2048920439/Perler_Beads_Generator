@@ -56,7 +56,7 @@ export function RightPanel() {
   }
   return (
   <aside className="right-panel">
-    <div className="right-tabs" role="tablist" aria-label="Right panel">
+    <div className="right-tabs" role="tablist" aria-label={localization.text.rightPanel}>
       <button
         className={rightTab === 'palette' ? 'active' : ''}
         role="tab"
@@ -167,7 +167,7 @@ export function RightPanel() {
             <option value="complete">{localization.text.mardComplete}</option>
           </select>
         </div>
-        <div className="palette-filter" aria-label="Palette groups">
+        <div className="palette-filter" aria-label={localization.text.paletteGroups}>
           {paletteGroups.map((group) => (
             <button
               key={group.id}

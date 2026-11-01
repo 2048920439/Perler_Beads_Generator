@@ -117,7 +117,7 @@ export class EditorService extends BaseService {
       selectedColor: getColor(this.paletteService.snapshot.selectedColorId),
       recentColors,
       paletteGroups: [
-        { id: 'all', label: 'All' },
+        { id: 'all', label: this.localization.text.allColors },
         ...[...new Set(paletteColors.map((color) => color.group))].map((group) => ({ id: group, label: group })),
       ],
     };

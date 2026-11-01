@@ -60,7 +60,7 @@ export function EditorTopBar() {
         }}
       />
       <header className="topbar">
-        <div className="brand-lockup" aria-label="Perler Beads Generator">
+        <div className="brand-lockup" aria-label={localization.text.appName}>
           <span className="logo-mark" aria-hidden="true"><span /><span /><span /><span /></span>
           <div>
             <strong>{localization.text.appName}</strong>
@@ -69,14 +69,14 @@ export function EditorTopBar() {
         </div>
 
         <div className="topbar-workspace">
-          <div className="topbar-params canvas-params" aria-label="Canvas controls">
+          <div className="topbar-params canvas-params" aria-label={localization.text.canvasControls}>
             <span className="topbar-control-label">{localization.text.board}</span>
             <div className="topbar-dimension-group">
-              <input aria-label="Canvas width" type="number" min={8} max={180} value={width} onChange={(event) => onWidthChange(Number(event.target.value))} />
+              <input aria-label={localization.text.canvasWidth} type="number" min={8} max={180} value={width} onChange={(event) => onWidthChange(Number(event.target.value))} />
               <span className="size-times">×</span>
-              <input aria-label="Canvas height" type="number" min={8} max={180} value={height} onChange={(event) => onHeightChange(Number(event.target.value))} />
+              <input aria-label={localization.text.canvasHeight} type="number" min={8} max={180} value={height} onChange={(event) => onHeightChange(Number(event.target.value))} />
             </div>
-            <select className="canvas-preset-select" aria-label="Canvas preset" value={selectedSizePreset || ''} onChange={(event) => onPresetChange(event.target.value)}>
+            <select className="canvas-preset-select" aria-label={localization.text.canvasPreset} value={selectedSizePreset || ''} onChange={(event) => onPresetChange(event.target.value)}>
               <option value="" disabled hidden>{localization.text.commonSizes}</option>
               {sizePresets.map((preset) => <option key={preset.label} value={preset.label}>{preset.label}</option>)}
             </select>
@@ -93,9 +93,9 @@ export function EditorTopBar() {
         </div>
 
         <div className="topbar-right">
-          <a className="github-link" href="https://github.com/Jett-Wu/Perler_Beads_Generator" target="_blank" rel="noreferrer" aria-label="GitHub" title="GitHub">
+          <a className="github-link" href="https://github.com/Jett-Wu/Perler_Beads_Generator" target="_blank" rel="noreferrer" aria-label={localization.text.github} title={localization.text.github}>
             <GitHubIcon />
-            <span>GitHub</span>
+            <span>{localization.text.github}</span>
           </a>
           <div className="language-toggle" aria-label={localization.text.language}>
             <button className={language === 'zh' ? 'active' : ''} onClick={() => onLanguageChange('zh')}>中</button>
