@@ -67,6 +67,7 @@ requests, and object URLs are released at the owning service's boundary.
 | Service | Responsibility |
 | --- | --- |
 | `ProjectService` | Project, cell edits, resize, settings, history, autosave |
+| `CanvasEditService` | Canvas edit commands and domain cell transformations; delegates project writes and history boundaries |
 | `LayerService` | Layer commands, names, usage selection, solo visibility restoration |
 | `AdjustmentService` | Adjustment parameters and session, reset, effects, color cleanup |
 | `ToolService` | Shared tool parameters, tool shortcuts, clipboard, option visibility |
@@ -91,6 +92,13 @@ drag target, export-popover draft, tooltip, zoom and pan in its component.
 Small visual children such as the clipboard preview and export menu retain
 explicit props; dependency injection is a service boundary, not a requirement
 for every visual component.
+
+Canvas implementation helpers are private to `src/components/editor/Utils`.
+Board, bead, selection, tool-preview and full-canvas rendering have separate
+modules; shape rasterization, grid geometry and browser text rasterization are
+also separated. The text module owns its glyph and layout caches. These helpers
+do not own React state or write project data. `WorkspaceCanvas` retains event
+handlers, gesture refs and effect cleanup; services must not import UI helpers.
 
 Adjustment sessions survive tab switches but end when an external edit,
 layer switch, resize or history navigation invalidates their baseline.

@@ -31,7 +31,10 @@ const { createServiceScope } = require('../src/service-core/service-injector.ts'
 const { ProjectService } = require('../src/services/project-service.ts');
 const { LayerService } = require('../src/services/layer-service.ts');
 const { ImageImportService } = require('../src/services/image-import-service.ts');
-const { autosaveKey, createProject, withLayers } = require('../src/core/project.ts');
+const { CanvasEditService } = require('../src/services/canvas-edit-service.ts');
+const { NoticeService } = require('../src/services/notice-service.ts');
+const { ToolService } = require('../src/services/tool-service.ts');
+const { autosaveKey, createProject, withLayers } = require('../src/services/domain/project.ts');
 
 const globalNames = ['window', 'document', 'localStorage'];
 const originalGlobals = new Map(globalNames.map((name) => [
@@ -105,6 +108,97 @@ function soloProject() {
   layers.toggleActiveLayerOnly();
   return { project, layers, images };
 }
+
+function copySelectionServices() {
+  const scope = createServiceScope();
+  activeServices.push(scope);
+  scope.activate();
+  const project = scope.injector.resolve(ProjectService);
+  project.replace(createProject(8, 8));
+  const cells = Array(64).fill(null);
+  cells.fill('mard-h7', 0, 4);
+  project.updateCells(cells);
+  const tools = scope.injector.resolve(ToolService);
+  tools.setTool('copy');
+  tools.setCopyMode('selection');
+  return {
+    project,
+    tools,
+    canvas: scope.injector.resolve(CanvasEditService),
+    notice: scope.injector.resolve(NoticeService),
+  };
+}
+
+test('copy selection accumulates additions and removals across drag segments', () => {
+  const { project, tools, canvas } = copySelectionServices();
+  const baseline = project.snapshot;
+  const initialIndices = [];
+  let selection = canvas.updateCopySelection([{ x: 0, y: 0 }], 'add', initialIndices);
+  assert.deepEqual(initialIndices, []);
+  assert.deepEqual(selection.indices, [0]);
+  selection = canvas.updateCopySelection([{ x: 0, y: 0 }, { x: 1, y: 0 }], 'add', selection.indices);
+  assert.deepEqual(selection.indices, [0, 1]);
+  selection = canvas.updateCopySelection([{ x: 1, y: 0 }, { x: 2, y: 0 }], 'add', selection.indices);
+  assert.deepEqual(selection.indices, [0, 1, 2]);
+  selection = canvas.updateCopySelection([{ x: 2, y: 0 }, { x: 3, y: 0 }], 'add', selection.indices);
+  assert.deepEqual(selection.indices, [0, 1, 2, 3]);
+  assert.deepEqual(selection.pattern, { width: 4, height: 1, cells: Array(4).fill('mard-h7') });
+  assert.strictEqual(tools.snapshot.copySelectionIndices, selection.indices);
+
+  for (const x of [0, 1, 2, 3]) {
+    selection = canvas.updateCopySelection([{ x, y: 0 }], 'remove', selection.indices);
+    assert.deepEqual(selection.indices, Array.from({ length: 3 - x }, (_, index) => x + index + 1));
+  }
+  assert.equal(selection.pattern, null);
+  assert.equal(tools.snapshot.clipboardPattern, null);
+  assert.strictEqual(project.snapshot, baseline);
+});
+
+test('unchanged copy selection preserves snapshots and emits no duplicate notices', (context) => {
+  const { tools, canvas, notice } = copySelectionServices();
+  const selected = canvas.updateCopySelection([{ x: 0, y: 0 }, { x: 1, y: 0 }], 'add', []);
+  const snapshot = tools.snapshot;
+  const emissions = { tools: 0, notices: 0 };
+  const toolSubscription = tools.snapshot$.subscribe(() => { emissions.tools += 1; });
+  const noticeSubscription = notice.snapshot$.subscribe(() => { emissions.notices += 1; });
+  context.after(() => {
+    toolSubscription.unsubscribe();
+    noticeSubscription.unsubscribe();
+  });
+  const baseline = { ...emissions };
+
+  for (const [points, action] of [
+    [[{ x: 0, y: 0 }, { x: 1, y: 0 }], 'add'],
+    [[{ x: 2, y: 0 }], 'remove'],
+    [[{ x: 4, y: 0 }], 'add'],
+    [[{ x: -1, y: 0 }, { x: 8, y: 0 }, { x: 0, y: 8 }], 'add'],
+    [[], 'remove'],
+  ]) {
+    const result = canvas.updateCopySelection(points, action, selected.indices);
+    assert.strictEqual(result.indices, selected.indices);
+    assert.strictEqual(result.pattern, selected.pattern);
+    assert.strictEqual(tools.snapshot, snapshot);
+    assert.deepEqual(emissions, baseline);
+  }
+
+  const removed = canvas.updateCopySelection([{ x: 0, y: 0 }], 'remove', selected.indices);
+  assert.deepEqual(removed.indices, [1]);
+  assert.deepEqual(emissions, { tools: baseline.tools + 1, notices: baseline.notices + 1 });
+});
+
+test('empty copy-selection gestures do not overwrite an existing clipboard or notice', () => {
+  const { tools, canvas, notice } = copySelectionServices();
+  const pattern = { width: 1, height: 1, cells: ['mard-h2'] };
+  tools.copyPattern(pattern, false);
+  const snapshot = tools.snapshot;
+  const message = notice.snapshot$.getValue();
+  const indices = [];
+  const result = canvas.updateCopySelection([{ x: 4, y: 0 }], 'add', indices);
+  assert.strictEqual(result.indices, indices);
+  assert.strictEqual(result.pattern, pattern);
+  assert.strictEqual(tools.snapshot, snapshot);
+  assert.equal(notice.snapshot$.getValue(), message);
+});
 
 test('ordinary editing remains debounced', async () => {
   const browser = browserStorage();

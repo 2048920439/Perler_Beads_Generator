@@ -13,6 +13,7 @@ import { ReferenceImageService } from '@/services/reference-image-service';
 import { WorkspaceService } from '@/services/workspace-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
 import { EditorService } from '@/services/editor-service';
+import { CanvasEditService } from '@/services/canvas-edit-service';
 import { BaseService } from './base-service';
 import type { Language } from '@/config/localization';
 
@@ -33,6 +34,7 @@ export function createServiceScope(language: Language = 'zh') {
   const tools = register(ToolService, new ToolService(project, localization, notice));
   const layers = register(LayerService, new LayerService(project, localization));
   const images = register(ImageImportService, new ImageImportService(project, palette, reference, localization, notice, layers));
+  register(CanvasEditService, new CanvasEditService(project, tools, localization, notice));
   register(AdjustmentService, new AdjustmentService(project, palette, localization, notice));
   register(ExportService, new ExportService(project, localization, notice));
   register(WorkspaceService, new WorkspaceService(project, images, reference, palette, tools, localization, notice));
