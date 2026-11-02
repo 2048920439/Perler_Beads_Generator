@@ -1,5 +1,5 @@
 import type { TextDirection } from '@/common/types';
-import { uniqueInBounds } from './grid-geometry';
+import { uniqueInBounds } from '@/services/domain/workspace/grid-geometry';
 
 type TextGlyph = {
   points: Array<{ x: number; y: number }>;

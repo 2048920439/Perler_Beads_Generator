@@ -6,9 +6,12 @@ import { useObservableState, useService } from '@/service-core';
 import { ProjectService } from '@/services/project-service';
 import { ToolService } from '@/services/tool-service';
 import { LocalizationService } from '@/services/localization-service';
+import { WorkspaceViewService } from '@/services/workspace-view-service';
 
 export function ToolRail() {
   const localization = useService(LocalizationService);
+  useObservableState(localization.snapshot$);
+  const view = useService(WorkspaceViewService);
   const projectService = useService(ProjectService);
   const { project } = useObservableState(projectService.snapshot$);
   const toolService = useService(ToolService);
@@ -93,7 +96,7 @@ export function ToolRail() {
                     className={project.settings.rightClickAction === action ? 'active' : ''}
                     type="button"
                     aria-pressed={project.settings.rightClickAction === action}
-                    onClick={() => projectService.updateSettings({ rightClickAction: action })}
+                    onClick={() => view.updateSettings({ rightClickAction: action })}
                   >
                     {action === 'pan' ? localization.text.pan : localization.text.erase}
                   </button>

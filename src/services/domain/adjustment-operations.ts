@@ -1,4 +1,4 @@
-import { colorDistance, getColor, nearestPaletteColor } from '@/services/domain/palette';
+import { colorDistance, getColor, nearestPaletteColor } from './palette';
 
 export type LayerEffect = 'invert' | 'grayscale' | 'blackWhite';
 export type AdjustmentSettings = {

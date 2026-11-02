@@ -5,7 +5,8 @@ import { DragHandleIcon, DuplicateIcon, EyeIcon, LockIcon, PencilIcon, TrashIcon
 import { useObservableState, useService } from '@/service-core';
 import { LayerService } from '@/services/layer-service';
 import { LocalizationService } from '@/services/localization-service';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
+import type { LayerChanges } from '@/services/domain/editing';
 
 type DragTarget = { id: string; edge: 'before' | 'after' };
 
@@ -20,7 +21,7 @@ function dragTargetFromEvent(event: DragEvent<HTMLElement>, layerId: string): Dr
 export function LayerPanel() {
   const service = useService(LayerService);
   const localization = useService(LocalizationService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   useObservableState(localization.snapshot$);
   const { project, layers } = useObservableState(editor.snapshot$);
   const { activeLayerId } = project;
@@ -34,7 +35,7 @@ export function LayerPanel() {
   const onAddLayer = () => service.addLayer();
   const onToggleActiveLayerOnly = () => service.toggleActiveLayerOnly();
   const onSelectLayer = (id: string) => service.selectLayer(id);
-  const onUpdateLayer = (id: string, changes: Partial<BeadLayer>) => service.updateLayer(id, changes);
+  const onUpdateLayer = (id: string, changes: LayerChanges) => service.updateLayer(id, changes);
   const onDuplicateLayer = (id: string) => service.duplicateLayer(id);
   const onDeleteLayer = (id: string) => service.deleteLayer(id);
   const onMoveLayer = (id: string, target: DragTarget) => service.moveLayer(id, target);

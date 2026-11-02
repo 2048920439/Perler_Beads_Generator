@@ -1,7 +1,8 @@
 import { BehaviorSubject } from 'rxjs';
+import { singleton } from '@/service-core/di';
+import { readonlyState } from '@/service-core/readonly-state';
 import { referenceLongPressDelay, referenceShortcut } from '@/config/editor';
 import { BaseService } from '@/service-core/base-service';
-import { LocalizationService } from './localization-service';
 import { NoticeService } from './notice-service';
 
 export type ReferenceSnapshot = {
@@ -9,55 +10,56 @@ export type ReferenceSnapshot = {
   offset: { x: number; y: number }; adjusting: boolean; placement: 'below' | 'above';
 };
 
+@singleton()
 export class ReferenceImageService extends BaseService {
-  readonly snapshot$ = new BehaviorSubject<ReferenceSnapshot>({
+  private readonly state = new BehaviorSubject<ReferenceSnapshot>({
     file: null, url: null, visible: false, opacity: 0.35, scale: 1,
     offset: { x: 0, y: 0 }, adjusting: false, placement: 'below',
   });
+  readonly snapshot$ = readonlyState(this.state);
 
-  constructor(private readonly localization: LocalizationService, private readonly notice: NoticeService) { super(); }
-  get snapshot(): ReferenceSnapshot { return this.snapshot$.getValue(); }
+  constructor(private readonly notice: NoticeService) { super(); }
+  get snapshot(): ReferenceSnapshot { return this.state.getValue(); }
 
   update(changes: Partial<Omit<ReferenceSnapshot, 'file' | 'url'>>): void {
-    this.snapshot$.next({ ...this.snapshot, ...changes });
+    this.state.next({ ...this.snapshot, ...changes });
   }
 
   load(file: File): void {
     if (!/^image\/(png|jpeg|jpg|webp)$/.test(file.type)) {
-      this.notice.show(this.localization.text.unsupportedImage);
+      this.notice.show((text) => text.unsupportedImage);
       return;
     }
     this.setImage(file, file);
-      this.notice.show(this.localization.text.referenceImageSet(file.name));
+    this.notice.show((text) => text.referenceImageSet(file.name));
   }
 
   setImage(file: File, blob: Blob): void {
     const url = URL.createObjectURL(blob);
     this.releaseUrl();
-    this.snapshot$.next({ ...this.snapshot, file, url, visible: true, scale: 1, offset: { x: 0, y: 0 }, adjusting: false });
+    this.state.next({ ...this.snapshot, file, url, visible: true, scale: 1, offset: { x: 0, y: 0 }, adjusting: false });
   }
 
   resetTransform(): void { this.update({ scale: 1, offset: { x: 0, y: 0 }, adjusting: false }); }
   clear(): void {
     this.releaseUrl();
-    this.snapshot$.next({ ...this.snapshot, file: null, url: null, visible: false, scale: 1, offset: { x: 0, y: 0 }, adjusting: false });
+    this.state.next({ ...this.snapshot, file: null, url: null, visible: false, scale: 1, offset: { x: 0, y: 0 }, adjusting: false });
   }
 
-  protected onActivate(): void {
+  protected onBind(): void {
     if (typeof window === 'undefined') return;
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.resetShortcut);
   }
 
-  protected onDeactivate(): void {
+  protected onUnbind(): void {
     if (typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.onKeyDown);
       window.removeEventListener('keyup', this.onKeyUp);
       window.removeEventListener('blur', this.resetShortcut);
     }
     this.resetShortcut();
-    this.clear();
   }
 
   private pressedAt: number | null = null;

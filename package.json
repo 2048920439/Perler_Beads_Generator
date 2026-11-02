@@ -7,6 +7,7 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "next dev",
+    "test": "node --test scripts/test-*.cjs",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "build": "next build",

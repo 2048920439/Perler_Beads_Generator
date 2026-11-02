@@ -2,31 +2,32 @@ import type { Subscription } from 'rxjs';
 
 export abstract class BaseService {
   private readonly subscriptions: Subscription[] = [];
-  private active = false;
+  private bound = false;
 
   protected own(subscription: Subscription): Subscription {
     this.subscriptions.push(subscription);
     return subscription;
   }
 
-  activate(): void {
-    if (this.active) return;
-    this.active = true;
-    this.onActivate();
+  bind(): void {
+    if (this.bound) return;
+    this.bound = true;
+    try {
+      this.onBind();
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
   }
 
-  deactivate(): void {
-    if (!this.active) return;
-    this.active = false;
+  unbind(): void {
+    if (!this.bound) return;
+    this.bound = false;
     this.subscriptions.splice(0).forEach((subscription) => subscription.unsubscribe());
-    this.onDeactivate();
+    this.onUnbind();
   }
 
-  protected onActivate(): void {}
+  protected onBind(): void {}
 
-  protected onDeactivate(): void {}
-
-  destroy(): void {
-    this.deactivate();
-  }
+  protected onUnbind(): void {}
 }

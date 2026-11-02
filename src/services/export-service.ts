@@ -1,4 +1,5 @@
 import type { BeadProject } from '@/common/types';
+import { singleton } from '@/service-core/di';
 import { ui, type Language } from '@/config/localization';
 import {
   downloadPrintPdf,
@@ -15,6 +16,7 @@ import { NoticeService } from './notice-service';
 
 export type { PrintExportOptions } from '@/services/domain/export/exporters';
 
+@singleton()
 export class ExportService extends BaseService {
   constructor(
     private readonly projectService: ProjectService,
@@ -26,12 +28,12 @@ export class ExportService extends BaseService {
 
   exportProject(project: BeadProject = this.projectService.snapshot.project): void {
     downloadProjectJson(project, this.exportLabels());
-    this.notice.show(this.localization.text.recordExported);
+    this.notice.show((text) => text.recordExported);
   }
 
   exportUsage(project: BeadProject = this.projectService.snapshot.project): void {
     downloadUsageWorkbook(project, this.exportLabels());
-    this.notice.show(this.localization.text.usageExported);
+    this.notice.show((text) => text.usageExported);
   }
 
   defaultProjectName(language: Language = this.localization.language): string {

@@ -198,9 +198,9 @@ project requirement.
 
 ## Verification
 
-- Run `pnpm lint` and `pnpm typecheck` for code changes. Run `pnpm build` when
+- Run `pnpm test`, `pnpm lint` and `pnpm typecheck` for code changes. Run `pnpm build` when
   changes affect application behavior, routing, or shared types.
-- This repository has no automated unit or browser-test suite. For interaction
+- Node regression checks run with `pnpm test`; there is no permanent browser-test suite. For interaction
   changes, perform a focused manual check and report what was and was not
   verified.
 - For modularization work, verify that moved responsibilities have not changed

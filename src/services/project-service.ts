@@ -1,18 +1,16 @@
 import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map } from 'rxjs';
 
-import type { BeadProject, ProjectSettings } from '@/common/types';
-import { composeVisibleCells, createProject, loadDraft, resizeCells, saveDraft, withCells, withLayers } from '@/services/domain/project';
-import { clampInteger } from './adjustment-operations';
+import { singleton } from '@/service-core/di';
+import { readonlyState } from '@/service-core/readonly-state';
+import type { BeadProject } from '@/common/types';
+import { createProject, loadDraft, saveDraft } from '@/services/domain/project';
 import { BaseService } from '@/service-core/base-service';
 
 export type ProjectSnapshot = {
   project: BeadProject;
   past: BeadProject[];
   future: BeadProject[];
-};
-
-export type ProjectUpdateOptions = {
-  recordHistory?: boolean;
+  revision: number;
 };
 
 function timestamp(project: BeadProject): BeadProject {
@@ -24,14 +22,17 @@ function initialProject(): BeadProject {
   return loadDraft() ?? createProject();
 }
 
+@singleton()
 export class ProjectService extends BaseService {
-  readonly snapshot$ = new BehaviorSubject<ProjectSnapshot>({
+  private readonly state = new BehaviorSubject<ProjectSnapshot>({
     project: initialProject(),
     past: [],
     future: [],
+    revision: 0,
   });
+  readonly snapshot$ = readonlyState(this.state);
 
-  protected onActivate(): void {
+  protected onBind(): void {
     if (typeof window === 'undefined') return;
     this.own(
       this.snapshot$
@@ -50,12 +51,12 @@ export class ProjectService extends BaseService {
     }
   }
 
-  protected onDeactivate(): void {
+  protected onUnbind(): void {
     this.saveCurrentDraft();
   }
 
   get snapshot(): ProjectSnapshot {
-    return this.snapshot$.getValue();
+    return this.state.getValue();
   }
 
   get activeLayer() {
@@ -63,68 +64,23 @@ export class ProjectService extends BaseService {
     return project.layers.find((layer) => layer.id === project.activeLayerId) ?? project.layers[0];
   }
 
-  updateSettings(changes: Partial<ProjectSettings>): void {
-    const { project } = this.snapshot;
-    this.replace({ ...project, settings: { ...project.settings, ...changes } });
-  }
-
-  updateCells(cells: Array<string | null>): void {
-    this.replace(withCells(this.snapshot.project, cells));
-  }
-
-  clearCanvas(): boolean {
-    if (this.activeLayer.locked || this.activeLayer.cells.every((cell) => cell === null)) return false;
-    const { project } = this.snapshot;
-    this.replace(withCells(project, Array.from({ length: project.width * project.height }, () => null)), { recordHistory: true });
-    return true;
-  }
-
-  resizeCanvas(inputWidth: number, inputHeight: number): boolean {
-    const { project } = this.snapshot;
-    const width = clampInteger(inputWidth, 8, 180);
-    const height = clampInteger(inputHeight, 8, 180);
-    if (width === project.width && height === project.height) return false;
-    const layers = project.layers.map((layer) => ({
-      ...layer, cells: resizeCells(layer.cells, project.width, project.height, width, height),
-    }));
-    this.replace({ ...project, width, height, layers, cells: composeVisibleCells(layers, width, height) }, { recordHistory: true });
-    return true;
-  }
-
-  replaceColor(sourceColorId: string, selectedColorId: string): number {
-    if (!sourceColorId || sourceColorId === selectedColorId) return 0;
-    const { project } = this.snapshot;
-    let changed = 0;
-    const layers = project.layers.map((layer) => {
-      const visible = project.settings.showActiveLayerOnly ? layer.id === project.activeLayerId : layer.visible;
-      if (layer.locked || !visible) return layer;
-      const cells = layer.cells.map((cell) => {
-        if (cell !== sourceColorId) return cell;
-        changed += 1;
-        return selectedColorId;
-      });
-      return { ...layer, cells };
-    });
-    if (changed) this.replace(withLayers(project, layers), { recordHistory: true });
-    return changed;
-  }
-
-  commitHistory(): void {
-    const { project, past } = this.snapshot;
+  /** Internal write boundary: only EditorService calls project mutation methods. */
+  recordHistory(base: BeadProject): void {
+    const current = this.snapshot;
     this.emit({
-      project,
-      past: [...past.slice(-39), project],
+      ...current,
+      past: [...current.past.slice(-39), base],
       future: [],
     });
   }
 
-  replace(project: BeadProject, options: ProjectUpdateOptions = {}): void {
+  publish(project: BeadProject, historyBase?: BeadProject, stamp = true): void {
     const current = this.snapshot;
-    const nextPast = options.recordHistory ? [...current.past.slice(-39), current.project] : current.past;
     this.emit({
-      project: timestamp(project),
-      past: nextPast,
-      future: options.recordHistory ? [] : current.future,
+      project: stamp ? timestamp(project) : project,
+      past: historyBase ? [...current.past.slice(-39), historyBase] : current.past,
+      future: historyBase ? [] : current.future,
+      revision: current.revision + 1,
     });
   }
 
@@ -133,9 +89,10 @@ export class ProjectService extends BaseService {
     const previous = past[past.length - 1];
     if (!previous) return;
     this.emit({
-      project: timestamp(previous),
+      project: timestamp(this.restorePreferences(previous, project)),
       past: past.slice(0, -1),
       future: [...future, project],
+      revision: this.snapshot.revision + 1,
     });
   }
 
@@ -144,14 +101,24 @@ export class ProjectService extends BaseService {
     const next = future[future.length - 1];
     if (!next) return;
     this.emit({
-      project: timestamp(next),
-      past: [...past, project],
+      project: timestamp(this.restorePreferences(next, project)),
+      past: [...past.slice(-39), project],
       future: future.slice(0, -1),
+      revision: this.snapshot.revision + 1,
     });
   }
 
   private emit(snapshot: ProjectSnapshot): void {
-    this.snapshot$.next(snapshot);
+    this.state.next(snapshot);
+  }
+
+  private restorePreferences(target: BeadProject, current: BeadProject): BeadProject {
+    return {
+      ...target,
+      settings: current.settings,
+      activeLayerId: target.layers.some((layer) => layer.id === current.activeLayerId)
+        ? current.activeLayerId : target.activeLayerId,
+    };
   }
 
   private saveCurrentDraft = (): void => {

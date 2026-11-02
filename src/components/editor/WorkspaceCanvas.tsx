@@ -3,19 +3,17 @@ import type { ClipboardPattern } from '@/common/types';
 import { useObservableState, useService } from '@/service-core';
 import { CanvasEditService } from '@/services/canvas-edit-service';
 import { ToolService } from '@/services/tool-service';
-import { EditorService } from '@/services/editor-service';
-import { ImageImportService } from '@/services/image-import-service';
+import { EditorQueryService } from '@/services/editor-query-service';
+import { ImportService } from '@/services/import-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
 import { PaletteService } from '@/services/palette-service';
-import { ProjectService } from '@/services/project-service';
-import { ReferenceImageService } from '@/services/reference-image-service';
+import { ReferenceImageService, isEditableTarget } from '@/services/reference-image-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
 import { drawPattern } from './Utils/canvas-renderer';
 import type { ReferenceImageRenderOptions } from './Utils/board-renderer';
 import type { PointerGridPoint, ShapeDraft } from './Utils/canvas-types';
-import { almostSamePoint, linePoints } from './Utils/grid-geometry';
-import { collectShapeIndices } from './Utils/shape-rasterizer';
+import { almostSamePoint, linePoints } from '@/services/domain/workspace/grid-geometry';
 import { collectTextIndices } from './Utils/text-rasterizer';
 
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
@@ -27,14 +25,13 @@ type HoverCell = {
 };
 
 export default function WorkspaceCanvas() {
-  const projectService = useService(ProjectService);
   const localization = useService(LocalizationService);
   const notice = useService(NoticeService);
   const palette = useService(PaletteService);
   const reference = useService(ReferenceImageService);
-  const images = useService(ImageImportService);
+  const images = useService(ImportService);
   const view = useService(WorkspaceViewService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   useObservableState(localization.snapshot$);
   const { displayProject: project, highlightedCellIndices } = useObservableState(editor.snapshot$);
   const { selectedColorId } = useObservableState(palette.snapshot$);
@@ -46,9 +43,9 @@ export default function WorkspaceCanvas() {
   const { isGenerating } = useObservableState(images.snapshot$);
   const referenceImageVisible = visible && !isGenerating;
   const referenceImageAdjusting = adjusting && referenceImageVisible;
-  const canEdit = !projectService.activeLayer.locked;
   const toolService = useService(ToolService);
   const canvasEdit = useService(CanvasEditService);
+  const canEdit = canvasEdit.canEdit;
   const toolState = useObservableState(toolService.snapshot$);
   const {
     tool, eraserSize, moveMode, removeMode, mirrorMode, mirrorDirection, shapeKind, shapeFillMode, arrowKind,
@@ -57,7 +54,6 @@ export default function WorkspaceCanvas() {
   const onReferenceOffsetChange = (offset: { x: number; y: number }) => reference.update({ offset });
   const onReferenceScaleChange = (scale: number) => reference.update({ scale });
   const onCommitStart = () => canvasEdit.beginGesture();
-  const onCellsChange = (cells: Array<string | null>) => canvasEdit.updateCells(cells);
   const onReplaceColor = (sourceColorId: string) => {
     canvasEdit.replaceColor(sourceColorId, palette.snapshot.selectedColorId);
   };
@@ -66,7 +62,7 @@ export default function WorkspaceCanvas() {
     palette.selectColor(colorId);
     toolService.setTool('pencil');
     toolService.closeOptions();
-    notice.show(localization.text.colorPicked);
+    notice.show((text) => text.colorPicked);
   };
   const onHover = (cell: HoverCell | null) => view.setHoverCell(cell);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -110,6 +106,23 @@ export default function WorkspaceCanvas() {
     shapeLastCellX: 0,
     shapeLastCellY: 0,
   });
+
+  const resetPointer = useCallback(() => {
+    Object.assign(pointerRef.current, {
+      drawing: false, panning: false, erasing: false, singleCellErasing: false,
+      movingPattern: false, draggingReference: false, copySelecting: false, shaping: false,
+      moveOriginCells: [], moveSelectionIndices: [], copySelectionSet: new Set<number>(),
+    });
+    setShapeDraft(null);
+    setActivePointerMode(null);
+    const canvas = canvasRef.current;
+    if (canvas?.hasPointerCapture(pointerRef.current.pointerId)) canvas.releasePointerCapture(pointerRef.current.pointerId);
+  }, []);
+
+  const cancelGesture = useCallback(() => {
+    canvasEdit.cancelGesture();
+    resetPointer();
+  }, [canvasEdit, resetPointer]);
 
   const cellSize = 18;
   const formatColorCode = React.useCallback((colorId: string) => palette.getColor(colorId)?.primaryCode ?? '', [palette]);
@@ -160,6 +173,9 @@ export default function WorkspaceCanvas() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isEditableTarget(event.target)) {
+        cancelGesture();
+      }
       if (event.code === 'Space') setIsSpaceDown(true);
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -171,7 +187,9 @@ export default function WorkspaceCanvas() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, []);
+  }, [cancelGesture]);
+
+  useEffect(() => () => canvasEdit.cancelGesture(), [canvasEdit]);
 
   useEffect(() => {
     if (!referenceImageUrl) {
@@ -322,6 +340,7 @@ export default function WorkspaceCanvas() {
       if (!clipboardPattern) return;
       onCommitStart();
       canvasEdit.paste(clipboardPattern, cell.x, cell.y);
+      canvasEdit.finishGesture();
       return;
     }
 
@@ -357,10 +376,9 @@ export default function WorkspaceCanvas() {
         mirrorMode === 'partial'
           ? canvasEdit.collectConnectedOccupied(activeCells, cell.x, cell.y)
           : [];
-      const next = canvasEdit.mirror(mirrorDirection, selectionIndices, activeCells, false);
-      if (next === activeCells) return;
       onCommitStart();
-      onCellsChange(next);
+      canvasEdit.mirror(mirrorDirection, selectionIndices);
+      canvasEdit.finishGesture();
       return;
     }
 
@@ -389,6 +407,7 @@ export default function WorkspaceCanvas() {
       if (indices.length === 0) return;
       onCommitStart();
       canvasEdit.applyText(indices, selectedColorId);
+      canvasEdit.finishGesture();
       return;
     }
 
@@ -396,6 +415,7 @@ export default function WorkspaceCanvas() {
     draftCellsRef.current = canvasEdit.activeLayerCells.slice();
     if (tool === 'fill') {
       canvasEdit.fill(cell.x, cell.y, selectedColorId);
+      canvasEdit.finishGesture();
       return;
     }
 
@@ -403,7 +423,8 @@ export default function WorkspaceCanvas() {
       const activeCells = canvasEdit.activeLayerCells;
       const startIndex = cell.y * project.width + cell.x;
       if (!activeCells[startIndex]) return;
-      canvasEdit.remove(cell.x, cell.y, removeMode, activeCells);
+      canvasEdit.remove(cell.x, cell.y, removeMode);
+      canvasEdit.finishGesture();
       return;
     }
 
@@ -480,7 +501,7 @@ export default function WorkspaceCanvas() {
         if (dx !== pointerRef.current.moveLastDx || dy !== pointerRef.current.moveLastDy) {
           pointerRef.current.moveLastDx = dx;
           pointerRef.current.moveLastDy = dy;
-          canvasEdit.shift(dx, dy, pointerRef.current.moveSelectionIndices, originCells);
+          canvasEdit.shift(dx, dy, pointerRef.current.moveSelectionIndices);
         }
         return;
       }
@@ -513,7 +534,7 @@ export default function WorkspaceCanvas() {
     }
   }
 
-  function handlePointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+  function handlePointerUp() {
     if (pointerRef.current.shaping) {
       const draft = shapeDraft ?? {
         kind: shapeKind,
@@ -522,23 +543,10 @@ export default function WorkspaceCanvas() {
         start: { x: pointerRef.current.shapeStartCellX, y: pointerRef.current.shapeStartCellY },
         end: { x: pointerRef.current.shapeLastCellX, y: pointerRef.current.shapeLastCellY },
       };
-      const indices = collectShapeIndices(draft.kind, draft.fillMode, draft.arrowKind, draft.start, draft.end, project.width, project.height);
-      draftCellsRef.current = canvasEdit.applyShape(indices, selectedColorId, draftCellsRef.current);
+      draftCellsRef.current = canvasEdit.applyShape(draft, selectedColorId);
     }
-    pointerRef.current.drawing = false;
-    pointerRef.current.panning = false;
-    pointerRef.current.erasing = false;
-    pointerRef.current.singleCellErasing = false;
-    pointerRef.current.movingPattern = false;
-    pointerRef.current.draggingReference = false;
-    pointerRef.current.copySelecting = false;
-    pointerRef.current.shaping = false;
-    pointerRef.current.moveOriginCells = [];
-    pointerRef.current.moveSelectionIndices = [];
-    pointerRef.current.copySelectionSet = new Set<number>();
-    setShapeDraft(null);
-    setActivePointerMode(null);
-    event.currentTarget.releasePointerCapture(pointerRef.current.pointerId);
+    canvasEdit.finishGesture();
+    resetPointer();
   }
 
   function handlePointerLeave() {
@@ -592,7 +600,7 @@ export default function WorkspaceCanvas() {
       value,
       brushSize: eraserSize,
       brush: value === null && !pointerRef.current.singleCellErasing,
-    }, draftCellsRef.current);
+    });
     draftCellsRef.current = next;
   }
 
@@ -622,7 +630,7 @@ export default function WorkspaceCanvas() {
       value,
       brushSize: eraserSize,
       brush: value === null && !pointerRef.current.singleCellErasing,
-    }, draftCellsRef.current);
+    });
     draftCellsRef.current = next;
   }
 
@@ -631,7 +639,6 @@ export default function WorkspaceCanvas() {
       { x: fromGridX, y: fromGridY },
       { x: toGridX, y: toGridY },
       eraserSize,
-      draftCellsRef.current,
     );
     draftCellsRef.current = next;
   }
@@ -678,7 +685,7 @@ export default function WorkspaceCanvas() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={cancelGesture}
         onPointerLeave={handlePointerLeave}
         onWheel={handleWheel}
       />

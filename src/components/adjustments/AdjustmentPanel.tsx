@@ -1,19 +1,19 @@
-import type { AdjustmentSettings, LayerEffect } from '@/services/adjustment-operations';
+import type { AdjustmentSettings, LayerEffect } from '@/services/domain/adjustment-operations';
 import { useObservableState, useService } from '@/service-core';
 import { AdjustmentService } from '@/services/adjustment-service';
 import { LocalizationService } from '@/services/localization-service';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 
 export function AdjustmentPanel() {
   const service = useService(AdjustmentService);
   const localization = useService(LocalizationService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   useObservableState(localization.snapshot$);
   const { activeLayer, activeLayerName } = useObservableState(editor.snapshot$);
   const { adjustments, colorCleanupStrength, layerColorLimit } = useObservableState(service.snapshot$);
   const onAdjustmentChange = (key: keyof AdjustmentSettings, value: number) => service.setAdjustment(key, value);
   const onReset = () => service.reset();
-  const onApplyEffect = (effect: LayerEffect, label: string) => service.applyEffect(effect, label);
+  const onApplyEffect = (effect: LayerEffect) => service.applyEffect(effect);
   const onColorCleanupStrengthChange = (value: number) => service.setColorCleanupStrength(value);
   const onApplyColorCleanup = () => service.cleanup();
   const onLayerColorLimitChange = (value: number) => service.setLayerColorLimit(value);
@@ -55,13 +55,13 @@ export function AdjustmentPanel() {
       <div className="adjustment-effect-card">
         <strong>{localization.text.effects}</strong>
         <div className="adjustment-effect-grid">
-          <button type="button" onClick={() => onApplyEffect('invert', localization.text.invertEffect)} disabled={activeLayer.locked}>
+          <button type="button" onClick={() => onApplyEffect('invert')} disabled={activeLayer.locked}>
             {localization.text.invertEffect}
           </button>
-          <button type="button" onClick={() => onApplyEffect('grayscale', localization.text.grayscaleEffect)} disabled={activeLayer.locked}>
+          <button type="button" onClick={() => onApplyEffect('grayscale')} disabled={activeLayer.locked}>
             {localization.text.grayscaleEffect}
           </button>
-          <button type="button" onClick={() => onApplyEffect('blackWhite', localization.text.blackWhiteEffect)} disabled={activeLayer.locked}>
+          <button type="button" onClick={() => onApplyEffect('blackWhite')} disabled={activeLayer.locked}>
             {localization.text.blackWhiteEffect}
           </button>
         </div>

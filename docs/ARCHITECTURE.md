@@ -42,10 +42,20 @@ contains the lifecycle, Injector, and React subscription bridge used by those
 services. High-frequency canvas interaction and transient panel state remain in
 presentation components.
 
-`src/app/client-app.tsx` mounts `ServiceProvider`, which creates one `tsyringe`
-scope per client application. Services receive other services through
-constructor injection, and `BaseService` activation/deactivation owns RxJS
-subscriptions and browser-side effects.
+`src/app/client-app.tsx` mounts `ServiceProvider`, a startup boundary for the
+single in-memory `Injector`. Services use `@singleton()` and constructor
+injection; no child containers or manual service construction are used. The
+Injector resolves the complete graph when its singleton is constructed.
+`ServiceProvider` only binds/unbinds service event subscriptions at the root
+React lifecycle boundary. Route language changes update `LocalizationService`
+without rebuilding or rebinding the service graph.
+
+Feature services call `EditorService` for every project edit. It owns command
+validation, content locks and edit transactions. `ProjectService` owns the only
+project state, revision, history and draft persistence; only the editor kernel
+calls its write API. `EditorQueryService` provides read-only derived display
+and statistics. Public state streams expose subscription and synchronous reads,
+not subject writes. Pure editing and adjustment operations live in the domain.
 
 The workspace components resolve their own services with `useService`.
 `App` composes those regions without forwarding business-state props.

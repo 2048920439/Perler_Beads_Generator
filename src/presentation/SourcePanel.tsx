@@ -3,17 +3,17 @@ import Image from 'next/image';
 import ThreePreview from '@/components/editor/ThreePreview';
 import type { BackgroundMode, GenerationStyle } from '@/common/types';
 import { ImageGridEditor } from '@/components/image-import/ImageGridEditor';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 import { useObservableState, useService } from '@/service-core';
-import { ImageImportService } from '@/services/image-import-service';
+import { ImportService } from '@/services/import-service';
 import { LocalizationService } from '@/services/localization-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
 
 export function SourcePanel() {
-  const images = useService(ImageImportService);
+  const images = useService(ImportService);
   const reference = useService(ReferenceImageService);
   const localization = useService(LocalizationService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   const language = useObservableState(localization.snapshot$);
   const { displayProject, totalBeads } = useObservableState(editor.snapshot$);
   const { pendingFile, pendingImageUrl, isGenerating, convertWidth, maxColors, tolerance, generationStyle, backgroundMode, showGridEditor } = useObservableState(images.snapshot$);

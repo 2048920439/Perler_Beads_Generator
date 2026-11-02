@@ -3,7 +3,7 @@ import { drawCoordinates, drawGrid, drawPegboardBoundaries, drawReferenceImage, 
 import { drawBeadStack, drawCellAlert, drawStackOverlay, readableTextColor } from './bead-renderer';
 import type { ColorResolver, PointerGridPoint, ShapeDraft } from './canvas-types';
 import { drawCopySelectionSet } from './selection-renderer';
-import { collectShapeIndices } from './shape-rasterizer';
+import { collectShapeIndices } from '@/services/domain/workspace/shape-rasterizer';
 import { drawBrushCursor, drawShapePreview, drawToolImpactPreview } from './tool-preview-renderer';
 
 export function drawPattern(

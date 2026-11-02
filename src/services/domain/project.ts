@@ -135,7 +135,9 @@ export function normalizeProject(project: BeadProject): BeadProject {
       ...project,
       settings,
       boardSettings: { ...fallback.boardSettings, ...project.boardSettings },
-      layers: project.layers?.length ? project.layers : fallback.layers,
+      layers: project.layers?.length ? project.layers : fallback.layers.map((layer) => ({
+        ...layer, cells: project.cells ?? layer.cells,
+      })),
     },
     width,
     height,
@@ -162,7 +164,7 @@ export function parseProjectJson(raw: string): BeadProject {
     throw new Error('INVALID_JSON');
   }
 
-  if (!parsed || typeof parsed !== 'object') {
+  if (!isRecord(parsed)) {
     throw new Error('INVALID_PROJECT');
   }
 
@@ -183,7 +185,53 @@ export function parseProjectJson(raw: string): BeadProject {
     throw new Error('INVALID_PROJECT');
   }
 
+  if (candidate.cells !== undefined && !validCells(candidate.cells)) throw new Error('INVALID_PROJECT');
+  if (candidate.layers !== undefined) {
+    if (!Array.isArray(candidate.layers)) throw new Error('INVALID_PROJECT');
+    const ids = new Set<string>();
+    for (const layer of candidate.layers) {
+      if (!isRecord(layer) || typeof layer.id !== 'string' || !layer.id || ids.has(layer.id)
+        || (layer.cells !== undefined && !validCells(layer.cells))
+        || (layer.name !== undefined && typeof layer.name !== 'string')
+        || (['visible', 'locked', 'includeInUsage', 'customName'] as const).some((key) => layer[key] !== undefined && typeof layer[key] !== 'boolean')
+        || (layer.opacity !== undefined && (typeof layer.opacity !== 'number' || !Number.isFinite(layer.opacity)
+          || layer.opacity < 0 || layer.opacity > 1))) throw new Error('INVALID_PROJECT');
+      ids.add(layer.id);
+    }
+  }
+  if (candidate.settings !== undefined) {
+    if (!isRecord(candidate.settings)) throw new Error('INVALID_PROJECT');
+    const settings = candidate.settings;
+    const defaults = createProject(1, 1).settings;
+    if ((Object.keys(defaults) as Array<keyof typeof defaults>).some((key) => {
+      const value = settings[key];
+      if (value === undefined) return false;
+      if (key === 'beadsPerPack') return typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 10000;
+      if (key === 'beadDisplayMode') return value !== 'bead' && value !== 'pixel' && value !== 'print';
+      if (key === 'rightClickAction') return value !== 'pan' && value !== 'erase';
+      return typeof value !== 'boolean';
+    })) throw new Error('INVALID_PROJECT');
+  }
+  if (candidate.boardSettings !== undefined) {
+    if (!isRecord(candidate.boardSettings)) throw new Error('INVALID_PROJECT');
+    const board = candidate.boardSettings;
+    if ((['boardWidth', 'boardHeight'] as const).some((key) => board[key] !== undefined
+      && (typeof board[key] !== 'number' || !Number.isInteger(board[key]) || board[key] < 1 || board[key] > maxProjectDimension))
+      || (board.showBoardIds !== undefined && typeof board.showBoardIds !== 'boolean')) throw new Error('INVALID_PROJECT');
+  }
+  if (['name', 'version', 'createdAt', 'updatedAt', 'activeLayerId'].some(
+    (key) => parsed[key] !== undefined && typeof parsed[key] !== 'string',
+  )) throw new Error('INVALID_PROJECT');
+
   return normalizeProject({ ...candidate, width, height } as BeadProject);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validCells(value: unknown): boolean {
+  return Array.isArray(value) && value.every((cell) => cell === null || typeof cell === 'string');
 }
 
 function normalizeLayers(project: BeadProject, width: number, height: number): BeadLayer[] {
@@ -194,7 +242,9 @@ function normalizeLayers(project: BeadProject, width: number, height: number): B
         ...layer,
         cells: index === 0 ? legacyCells : [],
       }));
+  const defaults = createProject(1, 1).layers[0];
   return sourceLayers.map((layer, index) => ({
+    ...defaults,
     ...layer,
     customName: Boolean(layer.customName),
     cells: normalizeCells(layer.cells ?? (index === 0 ? legacyCells : []), width, height),

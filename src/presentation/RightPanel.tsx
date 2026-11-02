@@ -5,13 +5,12 @@ import { LayerPanel } from '@/components/layers/LayerPanel';
 import { AdjustmentPanel } from '@/components/adjustments/AdjustmentPanel';
 import { useObservableState, useService } from '@/service-core';
 import { LayerService } from '@/services/layer-service';
-import { ProjectService } from '@/services/project-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
 import { PaletteService, type PaletteMode } from '@/services/palette-service';
 import { ToolService } from '@/services/tool-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 
 type RightTab = 'palette' | 'layers' | 'usage' | 'adjustments';
 export function RightPanel() {
@@ -20,14 +19,13 @@ export function RightPanel() {
   const paletteService = useService(PaletteService);
   const toolService = useService(ToolService);
   const view = useService(WorkspaceViewService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   const notice = useObservableState(noticeService.snapshot$);
   const { mode: paletteMode, selectedColorId } = useObservableState(paletteService.snapshot$);
   const { tool } = useObservableState(toolService.snapshot$);
   const { showIsolatedBeads } = useObservableState(view.snapshot$);
   const setShowIsolatedBeads = (value: boolean) => view.setShowIsolatedBeads(value);
   const setPaletteMode = (mode: PaletteMode) => paletteService.setMode(mode);
-  const projectService = useService(ProjectService);
   const layerService = useService(LayerService);
   const { project, layers, activeLayer, countedLayers, usage, totalBeads, totalPacks, isolatedBeads, boardCount, selectedColor, recentColors, paletteGroups } = useObservableState(editor.snapshot$);
   const [rightTab, setRightTab] = useState<RightTab>('palette');
@@ -52,7 +50,7 @@ export function RightPanel() {
   }
   function setBeadsPerPack(value: number) { layerService.setBeadsPerPack(value); }
   function updateProject(changes: Partial<typeof project['settings']>) {
-    projectService.updateSettings(changes);
+    view.updateSettings(changes);
   }
   return (
   <aside className="right-panel">
@@ -414,7 +412,7 @@ export function RightPanel() {
 
 function CellInfo() {
   const localization = useService(LocalizationService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   useObservableState(localization.snapshot$);
   const view = useService(WorkspaceViewService);
   const hoverCell = useObservableState(view.hoverCell$);

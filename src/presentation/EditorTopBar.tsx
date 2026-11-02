@@ -1,27 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { sizePresets } from '@/config/editor';
 import { GitHubIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon } from '@/common/ui/EditorIcons';
 import { PrintExportMenu } from '@/components/export/PrintExportMenu';
 import { useObservableState, useService } from '@/service-core';
 import type { PrintExportOptions } from '@/services/export-service';
 import { ExportService } from '@/services/export-service';
-import { ImageImportService } from '@/services/image-import-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
-import { ProjectService } from '@/services/project-service';
 import { WorkspaceService } from '@/services/workspace-service';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 
 export function EditorTopBar() {
-  const projectService = useService(ProjectService);
   const workspace = useService(WorkspaceService);
   const exports = useService(ExportService);
-  const images = useService(ImageImportService);
   const localization = useService(LocalizationService);
   const notice = useService(NoticeService);
-  const editor = useService(EditorService);
-  const router = useRouter();
+  const editor = useService(EditorQueryService);
   const language = useObservableState(localization.snapshot$);
   const { project, past, future, usage, totalBeads } = useObservableState(editor.snapshot$);
   const [width, onWidthChange] = useState(project.width);
@@ -31,7 +25,7 @@ export function EditorTopBar() {
   const defaultProjectName = useMemo(() => exports.defaultProjectName(language), [exports, language]);
   useEffect(() => { onWidthChange(project.width); onHeightChange(project.height); }, [project.width, project.height]);
   const onLanguageChange = (nextLanguage: typeof language) => {
-    if (nextLanguage !== language) router.push(`/${nextLanguage}/`);
+    localization.navigateLanguage(nextLanguage);
   };
   const onPresetChange = (value: string) => {
     const preset = sizePresets.find((item) => item.label === value);
@@ -44,8 +38,8 @@ export function EditorTopBar() {
   const onImportRecord = () => jsonInputRef.current?.click();
   const onNew = () => workspace.startBlank();
   const onClear = () => workspace.clearCanvas();
-  const onUndo = () => projectService.undo();
-  const onRedo = () => projectService.redo();
+  const onUndo = () => workspace.undo();
+  const onRedo = () => workspace.redo();
   return (
     <>
       <input
@@ -55,7 +49,7 @@ export function EditorTopBar() {
         accept="application/json,.json"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
-          if (file) void images.importRecord(file).catch((error: unknown) => notice.show(error instanceof Error ? error.message : localization.text.invalidRecord));
+          if (file) void workspace.importRecord(file).catch((error: unknown) => notice.show(error instanceof Error ? error.message : localization.text.invalidRecord));
           event.currentTarget.value = '';
         }}
       />

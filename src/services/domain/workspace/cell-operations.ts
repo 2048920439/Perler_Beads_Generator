@@ -36,8 +36,9 @@ export function paintCell(
   brush = value === null,
 ): CellValue[] {
   const next = cells.slice();
-  if (brush) applyBrush(next, gridX, gridY, brushSize, value, width, height);
-  else if (x >= 0 && y >= 0 && x < width && y < height) next[y * width + x] = value;
+  if (brush) return applyBrush(next, gridX, gridY, brushSize, value, width, height) ? next : cells;
+  if (x < 0 || y < 0 || x >= width || y >= height || next[y * width + x] === value) return cells;
+  next[y * width + x] = value;
   return next;
 }
 
@@ -52,6 +53,7 @@ export function paintLine(
   brush = value === null,
 ): CellValue[] {
   const next = cells.slice();
+  let changed = false;
   const steps = Math.max(
     Math.abs(to.x - from.x),
     Math.abs(to.y - from.y),
@@ -64,10 +66,13 @@ export function paintLine(
     const y = Math.round(from.y + (to.y - from.y) * ratio);
     const gridX = from.gridX + (to.gridX - from.gridX) * ratio;
     const gridY = from.gridY + (to.gridY - from.gridY) * ratio;
-    if (brush) applyBrush(next, gridX, gridY, brushSize, value, width, height);
-    else if (x >= 0 && y >= 0 && x < width && y < height) next[y * width + x] = value;
+    if (brush) changed = applyBrush(next, gridX, gridY, brushSize, value, width, height) || changed;
+    else if (x >= 0 && y >= 0 && x < width && y < height && next[y * width + x] !== value) {
+      next[y * width + x] = value;
+      changed = true;
+    }
   }
-  return next;
+  return changed ? next : cells;
 }
 
 export function paintBrushLine(
@@ -80,12 +85,13 @@ export function paintBrushLine(
   value: CellValue = null,
 ): CellValue[] {
   const next = cells.slice();
+  let changed = false;
   const steps = Math.max(Math.ceil(Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y)) * 3), 1);
   for (let step = 0; step <= steps; step += 1) {
     const ratio = step / steps;
-    applyBrush(next, from.x + (to.x - from.x) * ratio, from.y + (to.y - from.y) * ratio, brushSize, value, width, height);
+    changed = applyBrush(next, from.x + (to.x - from.x) * ratio, from.y + (to.y - from.y) * ratio, brushSize, value, width, height) || changed;
   }
-  return next;
+  return changed ? next : cells;
 }
 
 export function collectBrushIndices(centerX: number, centerY: number, size: number, width: number, height: number): number[] {
@@ -235,7 +241,7 @@ export function pasteClipboardPattern(
 }
 
 export function shiftCells(cells: CellValue[], width: number, height: number, dx: number, dy: number, selectionIndices: number[] = []): CellValue[] {
-  if (dx === 0 && dy === 0) return cells.slice();
+  if (dx === 0 && dy === 0) return cells;
   const moveIndices = selectionIndices.length > 0 ? selectionIndices : cells.flatMap((colorId, index) => (colorId ? [index] : []));
   const next = selectionIndices.length > 0 ? cells.slice() : Array<CellValue>(width * height).fill(null);
   if (selectionIndices.length > 0) moveIndices.forEach((index) => { next[index] = null; });
@@ -361,12 +367,13 @@ export function linePoints(x0: number, y0: number, x1: number, y1: number): Arra
   return points;
 }
 
-function applyBrush(cells: CellValue[], centerX: number, centerY: number, size: number, value: CellValue, width: number, height: number): void {
+function applyBrush(cells: CellValue[], centerX: number, centerY: number, size: number, value: CellValue, width: number, height: number): boolean {
   if (size <= 0.5) {
     const x = Math.floor(centerX);
     const y = Math.floor(centerY);
-    if (x >= 0 && y >= 0 && x < width && y < height) cells[y * width + x] = value;
-    return;
+    if (x < 0 || y < 0 || x >= width || y >= height || cells[y * width + x] === value) return false;
+    cells[y * width + x] = value;
+    return true;
   }
   const diameter = Math.max(1, Math.round(size));
   const radius = diameter / 2;
@@ -374,13 +381,18 @@ function applyBrush(cells: CellValue[], centerX: number, centerY: number, size: 
   const maxX = Math.min(width - 1, Math.ceil(centerX + radius - 0.5));
   const minY = Math.max(0, Math.floor(centerY - radius - 0.5));
   const maxY = Math.min(height - 1, Math.ceil(centerY + radius - 0.5));
+  let changed = false;
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
       const closestX = Math.max(x + 0.3, Math.min(x + 0.7, centerX));
       const closestY = Math.max(y + 0.3, Math.min(y + 0.7, centerY));
-      if ((closestX - centerX) ** 2 + (closestY - centerY) ** 2 <= radius ** 2) cells[y * width + x] = value;
+      if ((closestX - centerX) ** 2 + (closestY - centerY) ** 2 <= radius ** 2 && cells[y * width + x] !== value) {
+        cells[y * width + x] = value;
+        changed = true;
+      }
     }
   }
+  return changed;
 }
 
 function circleIntersectsCell(centerX: number, centerY: number, radius: number, cellX: number, cellY: number): boolean {

@@ -1,48 +1,70 @@
-import 'reflect-metadata';
+import './di';
 import { container, type InjectionToken } from 'tsyringe';
 import { AdjustmentService } from '@/services/adjustment-service';
+import { CanvasEditService } from '@/services/canvas-edit-service';
+import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 import { ExportService } from '@/services/export-service';
-import { ImageImportService } from '@/services/image-import-service';
+import { ImportService } from '@/services/import-service';
 import { LayerService } from '@/services/layer-service';
-import { ProjectService } from '@/services/project-service';
-import { ToolService } from '@/services/tool-service';
 import { LocalizationService } from '@/services/localization-service';
 import { NoticeService } from '@/services/notice-service';
 import { PaletteService } from '@/services/palette-service';
+import { ProjectService } from '@/services/project-service';
 import { ReferenceImageService } from '@/services/reference-image-service';
+import { ToolService } from '@/services/tool-service';
 import { WorkspaceService } from '@/services/workspace-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
-import { EditorService } from '@/services/editor-service';
-import { CanvasEditService } from '@/services/canvas-edit-service';
 import { BaseService } from './base-service';
-import type { Language } from '@/config/localization';
+import { isLanguage, type Language } from '@/config/localization';
 
-export function createServiceScope(language: Language = 'zh') {
-  const injector = container.createChildContainer();
-  const services: BaseService[] = [];
-  function register<T extends BaseService>(token: InjectionToken<T>, service: T): T {
-    injector.registerInstance(token, service);
-    services.push(service);
-    return service;
+const serviceTypes = [
+  AdjustmentService, CanvasEditService, EditorService, EditorQueryService, ExportService,
+  ImportService, LayerService, LocalizationService, NoticeService, PaletteService,
+  ProjectService, ReferenceImageService, ToolService, WorkspaceService, WorkspaceViewService,
+];
+class RuntimeInjector {
+  private readonly instances = new Set<BaseService>();
+  private readonly localization: LocalizationService;
+  private bound = false;
+
+  constructor() {
+    serviceTypes.forEach((token) => container.afterResolution<BaseService>(
+      token,
+      (_token, result) => {
+        if (!Array.isArray(result)) this.instances.add(result);
+      },
+      { frequency: 'Once' },
+    ));
+    serviceTypes.forEach((token) => container.resolve<BaseService>(token));
+    this.localization = container.resolve(LocalizationService);
+    if (typeof document !== 'undefined' && isLanguage(document.documentElement.lang)) {
+      this.localization.setLanguage(document.documentElement.lang as Language);
+    }
   }
-  const project = register(ProjectService, new ProjectService());
-  const localization = register(LocalizationService, new LocalizationService(language));
-  const palette = register(PaletteService, new PaletteService());
-  register(WorkspaceViewService, new WorkspaceViewService());
-  const notice = register(NoticeService, new NoticeService(localization));
-  const reference = register(ReferenceImageService, new ReferenceImageService(localization, notice));
-  const tools = register(ToolService, new ToolService(project, localization, notice));
-  const layers = register(LayerService, new LayerService(project, localization));
-  const images = register(ImageImportService, new ImageImportService(project, palette, reference, localization, notice, layers));
-  register(CanvasEditService, new CanvasEditService(project, tools, localization, notice));
-  register(AdjustmentService, new AdjustmentService(project, palette, localization, notice));
-  register(ExportService, new ExportService(project, localization, notice));
-  register(WorkspaceService, new WorkspaceService(project, images, reference, palette, tools, localization, notice));
-  register(EditorService, new EditorService(project, palette, localization, injector.resolve(WorkspaceViewService)));
 
-  return {
-    injector,
-    activate: () => services.forEach((service) => service.activate()),
-    deactivate: () => [...services].reverse().forEach((service) => service.deactivate()),
-  };
+  resolve<T extends BaseService>(token: InjectionToken<T>): T {
+    return container.resolve(token);
+  }
+
+  bind(language: Language): void {
+    this.localization.setLanguage(language);
+    if (this.bound) return;
+    this.bound = true;
+    try {
+      this.instances.forEach((service) => service.bind());
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
+  }
+
+  unbind(): void {
+    if (!this.bound) return;
+    this.bound = false;
+    [...this.instances].reverse().forEach((service) => service.unbind());
+  }
 }
+
+// Resolve the service graph once. React only attaches and detaches runtime events.
+export const Injector = new RuntimeInjector();

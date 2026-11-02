@@ -1,26 +1,27 @@
 'use client';
 
-import type { DependencyContainer, InjectionToken } from 'tsyringe';
+import type { InjectionToken } from 'tsyringe';
 import * as React from 'react';
 import { BaseService } from './base-service';
-import { createServiceScope } from './service-injector';
+import { Injector } from './service-injector';
+import { LocalizationService } from '@/services/localization-service';
 import type { Language } from '@/config/localization';
 
-const ServiceContainerContext = React.createContext<DependencyContainer | null>(null);
-
 export function ServiceProvider({ children, language }: React.PropsWithChildren<{ language: Language }>) {
-  const [scope] = React.useState(() => createServiceScope(language));
+  const initialLanguage = React.useRef(language);
 
   React.useEffect(() => {
-    scope.activate();
-    return () => scope.deactivate();
-  }, [scope]);
+    Injector.bind(initialLanguage.current);
+    return () => Injector.unbind();
+  }, []);
 
-  return <ServiceContainerContext.Provider value={scope.injector}>{children}</ServiceContainerContext.Provider>;
+  React.useEffect(() => {
+    Injector.resolve(LocalizationService).setLanguage(language);
+  }, [language]);
+
+  return children;
 }
 
 export function useService<T extends BaseService>(token: InjectionToken<T>): T {
-  const injector = React.useContext(ServiceContainerContext);
-  if (!injector) throw new Error('SERVICE_PROVIDER_REQUIRED');
-  return injector.resolve<T>(token);
+  return Injector.resolve<T>(token);
 }

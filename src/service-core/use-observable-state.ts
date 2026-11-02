@@ -1,9 +1,9 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { BehaviorSubject } from 'rxjs';
+import type { ReadonlyState } from './readonly-state';
 
-export function useObservableState<T>(source: BehaviorSubject<T>): T {
+export function useObservableState<T>(source: ReadonlyState<T>): T {
   return useSyncExternalStore(
     (listener) => {
       const subscription = source.subscribe(() => listener());

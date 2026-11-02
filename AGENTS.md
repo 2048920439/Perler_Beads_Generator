@@ -24,12 +24,17 @@
 Run the checks relevant to the change:
 
 ```bash
+pnpm test
 pnpm lint
 pnpm typecheck
 pnpm build
 ```
 
-There is currently no automated unit or browser-test suite. For behavior changes, state what was manually checked and identify important untested paths; do not claim tests passed when only a build was run.
+Node regression checks run through `pnpm test`. There is no permanent browser-test suite. For behavior changes, state what was manually checked and identify important untested paths; do not claim tests passed when only a build was run.
+
+- Services use `@singleton()` and constructor injection through the single runtime Injector, which resolves the graph on singleton construction. Do not create child containers or manually construct production services.
+- The root `ServiceProvider` only binds and unbinds service subscriptions/event handlers. Do not add separate service initialization or teardown calls.
+- Only `EditorService` may call `ProjectService` mutation methods. UI sends intents through feature services; public state streams must remain read-only.
 
 ## AI-Assisted Changes
 

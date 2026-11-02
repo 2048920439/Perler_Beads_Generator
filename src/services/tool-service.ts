@@ -1,4 +1,6 @@
 import { BehaviorSubject, distinctUntilChanged, fromEvent, map } from 'rxjs';
+import { singleton } from '@/service-core/di';
+import { readonlyState } from '@/service-core/readonly-state';
 
 import type {
   ArrowKind,
@@ -14,7 +16,6 @@ import type {
 } from '@/common/types';
 import { tools } from '@/config/editor';
 import { BaseService } from '@/service-core/base-service';
-import { LocalizationService } from './localization-service';
 import { NoticeService } from './notice-service';
 import { ProjectService } from './project-service';
 import { isEditableTarget } from './reference-image-service';
@@ -75,17 +76,18 @@ const initialSnapshot: ToolSnapshot = {
   copySelectionIndices: [],
 };
 
+@singleton()
 export class ToolService extends BaseService {
-  readonly snapshot$ = new BehaviorSubject<ToolSnapshot>(initialSnapshot);
+  private readonly state = new BehaviorSubject<ToolSnapshot>(initialSnapshot);
+  readonly snapshot$ = readonlyState(this.state);
 
   constructor(
     private readonly projectService: ProjectService,
-    private readonly localization: LocalizationService,
     private readonly notice: NoticeService,
   ) { super(); }
 
   get snapshot(): ToolSnapshot {
-    return this.snapshot$.getValue();
+    return this.state.getValue();
   }
 
   getClipboardBeadCount(): number {
@@ -152,7 +154,7 @@ export class ToolService extends BaseService {
 
   resetClipboard(): void {
     this.update({ clipboardPattern: null, copySelectionIndices: [] });
-    this.notice.show(this.localization.text.clipboardReset);
+    this.notice.show((text) => text.clipboardReset);
   }
 
   closeOptions(keepText = false): void {
@@ -166,15 +168,17 @@ export class ToolService extends BaseService {
   copyPattern(pattern: ClipboardPattern, switchToPaste = true): void {
     this.update({ clipboardPattern: pattern, tool: switchToPaste ? 'paste' : this.snapshot.tool });
     this.closeOptions();
-    this.notice.show(this.localization.text.copiedPattern(pattern.width, pattern.height, pattern.cells.filter(Boolean).length));
+    const count = pattern.cells.filter(Boolean).length;
+    this.notice.show((text) => text.copiedPattern(pattern.width, pattern.height, count));
   }
 
   updateCopySelection(indices: number[], pattern: ClipboardPattern | null): void {
     this.update({ copySelectionIndices: indices, clipboardPattern: pattern });
-    this.notice.show(pattern ? this.localization.text.copySelectionUpdated(pattern.cells.filter(Boolean).length) : this.localization.text.clipboardReset);
+    const count = pattern?.cells.filter(Boolean).length ?? 0;
+    this.notice.show((text) => pattern ? text.copySelectionUpdated(count) : text.clipboardReset);
   }
 
-  protected onActivate(): void {
+  protected onBind(): void {
     this.own(this.projectService.snapshot$.pipe(
       map(({ project }) => `${project.createdAt}:${project.activeLayerId}:${project.width}:${project.height}`),
       distinctUntilChanged(),
@@ -192,6 +196,6 @@ export class ToolService extends BaseService {
 
   private update(changes: Partial<ToolSnapshot>): void {
     if ((Object.keys(changes) as Array<keyof ToolSnapshot>).every((key) => this.snapshot[key] === changes[key])) return;
-    this.snapshot$.next({ ...this.snapshot, ...changes });
+    this.state.next({ ...this.snapshot, ...changes });
   }
 }

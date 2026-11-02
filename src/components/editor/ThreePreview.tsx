@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as THREE from 'three';
 import type { BeadProject } from '@/common/types';
 import { useService } from '@/service-core';
-import { EditorService } from '@/services/editor-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 import { PaletteService } from '@/services/palette-service';
 
 const { useEffect, useRef, useState } = React;
@@ -33,7 +33,7 @@ type Props = {
 
 export default function ThreePreview({ project, title, emptyLabel, closeLabel, expandLabel }: Props) {
   const palette = useService(PaletteService);
-  const editor = useService(EditorService);
+  const editor = useService(EditorQueryService);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const modalHostRef = useRef<HTMLDivElement | null>(null);
   const refs = useRef<PreviewRefs | null>(null);

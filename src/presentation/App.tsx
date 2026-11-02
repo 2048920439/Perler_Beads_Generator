@@ -4,10 +4,10 @@ import { EditorTopBar } from '@/presentation/EditorTopBar';
 import { ToolRail } from '@/components/editor/ToolRail';
 import { RightPanel } from '@/presentation/RightPanel';
 import { useService } from '@/service-core';
-import { ImageImportService } from '@/services/image-import-service';
+import { ImportService } from '@/services/import-service';
 
 export default function App() {
-  const images = useService(ImageImportService);
+  const images = useService(ImportService);
   return (
     <main
       className="app-shell"

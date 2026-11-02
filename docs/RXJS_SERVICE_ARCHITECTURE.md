@@ -1,127 +1,122 @@
 # RxJS Service Architecture
 
-## Assessment
-
-This project is a reasonable candidate for an RxJS-backed service layer, but
-RxJS should not become the implementation language for every piece of state.
-The editor has several long-lived workflows that benefit from a command stream:
-
-- project state shared by the canvas, palette, layers, usage, and export panels;
-- undo/redo and autosave;
-- image conversion requests that should cancel or supersede older requests;
-- import, export, and other asynchronous browser effects;
-- cross-panel notifications and status changes.
-
-Other state is better kept local to the component that owns the interaction:
-
-- pointer coordinates, drag sessions, and canvas previews;
-- open/closed popovers and dialogs;
-- pointer tracking, zoom, pan, and shape drafts;
-- pure derived values such as usage summaries and visible palette entries.
-
-The recommended target is:
+## Dependency Direction
 
 ```text
-UI components -> application services -> pure core/domain functions
-                 \-> browser effects
+UI -> feature services -> EditorService -> ProjectService
+                         \-> pure domain operations
+UI -> EditorQueryService -> project/palette/localization/view state
 ```
 
-The UI reads service snapshots and sends intent-level commands. It should not
-own the project aggregate, history stacks, persistence timing, or async
-workflow cancellation.
+`ProjectService` is the only owner of the project, history, runtime revision and
+draft persistence. Its mutation methods are internal to `EditorService`.
+Feature services must not assemble modified projects or manage history stacks.
+`EditorQueryService` is a read model, not an editing API.
 
-## Current Slice
+## Injector and Lifecycle
 
-`src/services/project-service.ts` is the project aggregate service. It owns:
+There is one in-memory `Injector` and one instance of each service per browser
+runtime. Refreshing creates a new runtime. There are no child containers or
+per-component service scopes. All services use `@singleton()` through the DI
+entry point that loads `reflect-metadata` first. TypeScript decorator metadata
+provides constructor injection.
 
-- the current `BeadProject`;
-- undo and redo stacks;
-- timestamping project revisions;
-- debounced draft persistence;
-- a `BehaviorSubject` snapshot consumed through
-  `src/service-core/use-observable-state.ts`.
+The composition root keeps a list of service types, not constructed instances
+or dependency wiring. When the Injector singleton is created, it resolves the
+service graph once; resolution-completion hooks collect instances in
+dependency-first order. To add a service, annotate the class, declare constructor
+dependencies and add its type to that list. Domain modules never resolve
+services, and feature services never access the Injector.
 
-`src/presentation/App.tsx` only composes the workspace and accepts image drops.
-`EditorTopBar`, `SourcePanel`, `ToolRail`, `WorkspaceCanvas`, `RightPanel`,
-`LayerPanel`, and `AdjustmentPanel` resolve their own services through
-`useService` and subscribe with `useObservableState`. They do not receive
-business state or service methods through props.
-Existing project normalization and immutable transformations remain in
-`src/services/domain/project.ts`.
+`ServiceProvider` only binds the already-created services when the root React
+tree mounts and unbinds them when it is destroyed. `BaseService` owns
+subscriptions and external event handlers, and unbinding only removes those
+bindings. It does not reset project/history or clear reference-image state.
+Pending image requests and their object URLs are cancelled at this resource
+boundary. StrictMode may bind/unbind the same instances more than once; both
+operations are idempotent. Language changes update localization without
+rebinding the service graph.
 
-The client composition root is `src/service-core/service-injector.ts`,
-mounted by `src/service-core/service-provider.tsx`.
-It creates a `tsyringe` child container per application instance, registers
-each stateful service once, resolves dependencies, and activates all services
-together. Constructor dependencies are registered instances in that same
-scope, rather than transient factories. Two components resolving the same
-token receive the same instance. There are no module-level service singletons.
-
-`BaseService.activate()` and `BaseService.deactivate()` own RxJS subscription
-lifecycle. Importing a service does not start persistence or async effects.
-Services deactivate in reverse order. Keyboard listeners, pending image
-requests, and object URLs are released at the owning service's boundary.
+Language buttons use native history navigation between the equivalent locale
+workspace URLs. This avoids a root-layout document reload, retaining singleton
+state and undo history. Localization also handles back/forward, document title
+and description; directly opening either locale URL still uses its static page.
 
 ## Capability Ownership
 
 | Service | Responsibility |
 | --- | --- |
-| `ProjectService` | Project, cell edits, resize, settings, history, autosave |
-| `CanvasEditService` | Canvas edit commands and domain cell transformations; delegates project writes and history boundaries |
-| `LayerService` | Layer commands, names, usage selection, solo visibility restoration |
-| `AdjustmentService` | Adjustment parameters and session, reset, effects, color cleanup |
-| `ToolService` | Shared tool parameters, tool shortcuts, clipboard, option visibility |
+| `ProjectService` | Project state, history storage, revision, timestamps, autosave |
+| `EditorService` | Editing commands, validation, transactions, lock and history policies |
+| `EditorQueryService` | Display projection, layer information, usage and palette-derived read model |
+| `CanvasEditService` | Canvas intent coordination, clipboard selection, tool options and notices |
+| `LayerService` | Layer intent coordination, localized and duplicate naming |
+| `AdjustmentService` | Adjustment parameters and baseline-preview session |
+| `ImportService` | File validation, image conversion, JSON parsing, request supersession, temporary URLs |
+| `WorkspaceService` | New/import document coordination, undo/redo commands and shortcuts |
+| `ToolService` | Tool parameters, shortcuts, clipboard, selection and options |
 | `PaletteService` | Palette mode, selected color, recent colors |
-| `ReferenceImageService` | Reference file, object URL, transform, O-key shortcut |
-| `ImageImportService` | Source image, generation settings, request supersession, validated JSON import |
-| `ExportService` | Download effects, localized filenames and export status |
-| `LocalizationService` | Language, document language and language preference |
-| `NoticeService` | Cross-panel notices and ready/generated message localization |
-| `WorkspaceViewService` | Color highlighting, isolated-bead visibility, separate cell-hover stream |
-| `WorkspaceService` | New-document coordination and document-level shortcuts |
+| `WorkspaceViewService` | View command entry, highlights, isolated beads and separate hover stream |
+| `ReferenceImageService` | Reference image resource, display, transform and shortcut |
+| `ExportService` | Export parameters, localized filenames and browser downloads |
+| `LocalizationService` | Current language and document-language synchronization |
+| `NoticeService` | Notification state and notification localization |
 
-State with multiple consumers has one service owner. For example, both
-`ToolRail` and `WorkspaceCanvas` subscribe to `ToolService`; selecting a tool
-does not require an App-level setter or prop forwarding. Canvas pointer
-coordinates and gesture refs remain local. Cell hover has a separate stream
-consumed by the cell-information region, so it does not rerender the complete
-right panel.
+## Editing Contract
 
-Keep presentation-only state such as the selected panel tab, rename draft,
-drag target, export-popover draft, tooltip, zoom and pan in its component.
-Small visual children such as the clipboard preview and export menu retain
-explicit props; dependency injection is a service boundary, not a requirement
-for every visual component.
+Commands return `EditResult`: applied, unchanged, or rejected with a typed reason
+(locked, invalid input, stale revision, invalid session, or empty history).
+The kernel contains no UI strings, notifications or tool/palette state.
+Adjustment palettes are explicit command inputs.
 
-Canvas implementation helpers are private to `src/components/editor/Utils`.
-Board, bead, selection, tool-preview and full-canvas rendering have separate
-modules; shape rasterization, grid geometry and browser text rasterization are
-also separated. The text module owns its glyph and layout caches. These helpers
-do not own React state or write project data. `WorkspaceCanvas` retains event
-handlers, gesture refs and effect cleanup; services must not import UI helpers.
+Continuous editing uses `beginEdit`, `updateEdit`, `finishEdit` and `cancelEdit`.
+Opaque handles are checked by identity. A session owns its baseline; move and
+adjustment updates are calculated from it, not from previously transformed
+previews. Drawing updates use current cells. A discrete command, layer switch,
+lock change, resize or history navigation finishes the old session. Subsequent
+updates from the old handle are rejected.
 
-Adjustment sessions survive tab switches but end when an external edit,
-layer switch, resize or history navigation invalidates their baseline.
-Image generation checks request identity and project identity after each
-asynchronous processing stage before committing its result.
+Finishing records one history entry only when final content differs from the
+baseline. Cancelling restores the baseline without consuming redo. Escape and
+pointer cancellation cancel canvas gestures; adjustment reset cancels its
+preview. Switching adjustment panels does not end the preview.
 
-## Guardrails
+History covers content, canvas dimensions, layer structure/metadata and document
+replacement, with a 40-entry limit. Project settings and transient view/tool/
+reference state do not enter history. Undo/redo retains current settings and
+the active layer when it still exists. Effective new history clears redo;
+no-op commands do not change timestamps, revisions or history.
 
-- Keep pure transformations under `src/services/domain`; application services coordinate them.
-- Do not put high-frequency pointer events into the project state stream.
-- Use `switchMap` for replaceable async work and `concatMap` only when every
-  queued command must complete.
-- Keep browser-only persistence and object-URL management at explicit effect
-  boundaries.
-- UI subscribes to snapshots; service methods are the write API. Do not call
-  a snapshot subject's `next()` from presentation code.
-- Destroy subscriptions when a service lifecycle ends. The application
-  Injector owns the current service scope.
+Layer locks block content operations, including image replacement; global
+recolor skips locked layers and respects the effective visible scope.
+Layer management and document resizing remain allowed, including cropping or
+expanding locked layers. Undo/redo and document replacement bypass content locks.
+Solo mode only changes the display projection, never actual layer visibility.
 
-## Conclusion
+## Boundaries and Performance
 
-RxJS is suitable as the business orchestration backbone for this editor, with
-medium-to-high expected value. It is not a good reason to replace React's
-local state or pure `useMemo` derivations wholesale. The service layer should
-be introduced capability by capability, starting with project state and
-history, then moving asynchronous image import and export workflows.
+Public state streams use `ReadonlyState`: subscription and `getValue`, without
+`next` or `complete`. React's `useObservableState` reads that contract through
+`useSyncExternalStore`. Mutable subjects are private.
+
+Pure editing/adjustment transformations live under `services/domain`. Canvas
+pointer tracking, zoom, pan and shape drafts stay local. Browser glyph
+rasterization remains outside the kernel. Paint operations report no change
+through array identity without an additional full-project comparison.
+
+Images and JSON stay in the browser. Import validates nested cells, layers and
+settings and normalizes compatible older records. Image processing checks
+request identity and project revision after each async stage; the kernel
+rechecks revision and target-layer lock before applying the result.
+Successful project imports are coordinated by `WorkspaceService`; failed or
+cancelled reads leave project and tool state intact.
+
+## Verification
+
+Run `pnpm test`, `pnpm lint`, `pnpm typecheck` and `pnpm build`.
+The Node checks cover pure operations, eager singleton resolution, root binding,
+state write boundaries, transactions, history, locks, import cancellation and
+persistence. Tests unbind services, clear singleton instance caches while
+retaining decorator registrations, and reload the composition-root module.
+Production exposes no reset entry point. Browser behavior still requires
+focused checks.
