@@ -50,6 +50,14 @@ export class WorkspaceService extends BaseService {
     this.notice.show((text) => text.recordImported);
   }
 
+  async importRecordWithNotice(file: File): Promise<void> {
+    try {
+      await this.importRecord(file);
+    } catch (error) {
+      this.notice.show((text) => error instanceof Error ? error.message : text.invalidRecord);
+    }
+  }
+
   undo(): void { this.editor.undo(); }
   redo(): void { this.editor.redo(); }
 

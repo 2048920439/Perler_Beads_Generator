@@ -3,7 +3,7 @@ import { ArrowOptionIcon, ResetIcon, ShapeOptionIcon, ToolIcon } from '@/common/
 import type { CopyMode, MoveMode, RemoveMode, RightClickAction, ShapeFillMode, ShapeKind, TextDirection, ToolId, ArrowKind, MirrorDirection } from '@/common/types';
 import { ClipboardPreview } from '@/components/editor/ClipboardPreview';
 import { useObservableState, useService } from '@/service-core';
-import { ProjectService } from '@/services/project-service';
+import { EditorQueryService } from '@/services/editor-query-service';
 import { ToolService } from '@/services/tool-service';
 import { LocalizationService } from '@/services/localization-service';
 import { WorkspaceViewService } from '@/services/workspace-view-service';
@@ -12,8 +12,8 @@ export function ToolRail() {
   const localization = useService(LocalizationService);
   useObservableState(localization.snapshot$);
   const view = useService(WorkspaceViewService);
-  const projectService = useService(ProjectService);
-  const { project } = useObservableState(projectService.snapshot$);
+  const editor = useService(EditorQueryService);
+  const { project } = useObservableState(editor.snapshot$);
   const toolService = useService(ToolService);
   const toolState = useObservableState(toolService.snapshot$);
   const {
@@ -36,7 +36,6 @@ export function ToolRail() {
   const setRemoveMode = (value: RemoveMode) => toolService.setRemoveMode(value);
   const setMoveMode = (value: MoveMode) => toolService.setMoveMode(value);
   const setCopyMode = (value: CopyMode) => toolService.setCopyMode(value);
-  const setCopySelectionIndices = (value: number[]) => toolService.setCopySelectionIndices(value);
   const setMirrorMode = (value: MoveMode) => toolService.setMirrorMode(value);
   const setMirrorDirection = (value: MirrorDirection) => toolService.setMirrorDirection(value);
   const setShapeFillMode = (value: ShapeFillMode) => toolService.setShapeFillMode(value);
@@ -188,10 +187,7 @@ export function ToolRail() {
                       className={copyMode === mode ? 'active' : ''}
                       type="button"
                       aria-pressed={copyMode === mode}
-                      onClick={() => {
-                        setCopyMode(mode);
-                        setCopySelectionIndices([]);
-                      }}
+                      onClick={() => setCopyMode(mode)}
                     >
                       {mode === 'connected' ? localization.text.copyConnected : localization.text.copySelection}
                     </button>

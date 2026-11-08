@@ -24,6 +24,8 @@ export class LayerService extends BaseService {
   }
   updateLayer(layerId: string, changes: LayerChanges): void { this.editor.updateLayer(layerId, changes); }
   updateUsageSelection(includedLayerIds: Set<string>): void { this.editor.updateUsageSelection(includedLayerIds); }
+  countAllLayers(): void { this.updateUsageSelection(new Set(this.layers.map((layer) => layer.id))); }
+  countActiveLayer(): void { this.updateUsageSelection(new Set([this.project.activeLayerId])); }
   toggleUsageLayer(layerId: string): void {
     const ids = new Set(this.layers.filter((layer) => layer.includeInUsage).map((layer) => layer.id));
     if (ids.has(layerId)) ids.delete(layerId);

@@ -6,7 +6,6 @@ import { useObservableState, useService } from '@/service-core';
 import type { PrintExportOptions } from '@/services/export-service';
 import { ExportService } from '@/services/export-service';
 import { LocalizationService } from '@/services/localization-service';
-import { NoticeService } from '@/services/notice-service';
 import { WorkspaceService } from '@/services/workspace-service';
 import { EditorQueryService } from '@/services/editor-query-service';
 
@@ -14,7 +13,6 @@ export function EditorTopBar() {
   const workspace = useService(WorkspaceService);
   const exports = useService(ExportService);
   const localization = useService(LocalizationService);
-  const notice = useService(NoticeService);
   const editor = useService(EditorQueryService);
   const language = useObservableState(localization.snapshot$);
   const { project, past, future, usage, totalBeads } = useObservableState(editor.snapshot$);
@@ -49,7 +47,7 @@ export function EditorTopBar() {
         accept="application/json,.json"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
-          if (file) void workspace.importRecord(file).catch((error: unknown) => notice.show(error instanceof Error ? error.message : localization.text.invalidRecord));
+          if (file) void workspace.importRecordWithNotice(file);
           event.currentTarget.value = '';
         }}
       />

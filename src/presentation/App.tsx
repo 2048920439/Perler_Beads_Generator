@@ -14,8 +14,7 @@ export default function App() {
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         event.preventDefault();
-        const file = [...event.dataTransfer.files].find((item) => item.type.startsWith('image/'));
-        if (file) images.openImage(file);
+        images.openDroppedFiles(event.dataTransfer.files);
       }}
     >
       <EditorTopBar />

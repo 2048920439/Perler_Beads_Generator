@@ -130,9 +130,10 @@ export class ToolService extends BaseService {
   setArrowKind(value: ArrowKind): void { this.update({ arrowKind: value }); }
   setTextToolValue(value: string): void { this.update({ textToolValue: value }); }
   setTextToolDirection(value: TextDirection): void { this.update({ textToolDirection: value }); }
-  setTextToolSize(value: number): void { this.update({ textToolSize: value }); }
-  setTextToolSpacing(value: number): void { this.update({ textToolSpacing: value }); }
-  setCopyMode(value: CopyMode): void { this.update({ copyMode: value }); }
+  setTextToolSize(value: number): void { this.update({ textToolSize: this.normalizeTextSize(value) }); }
+  setTextToolSpacing(value: number): void { this.update({ textToolSpacing: this.normalizeTextSpacing(value) }); }
+  stepTextToolSize(direction: -1 | 1): void { this.setTextToolSize(this.snapshot.textToolSize + direction); }
+  setCopyMode(value: CopyMode): void { this.update({ copyMode: value, copySelectionIndices: [] }); }
   setCopySelectionIndices(value: number[]): void { this.update({ copySelectionIndices: value }); }
   setClipboardPattern(value: ClipboardPattern | null): void { this.update({ clipboardPattern: value }); }
 

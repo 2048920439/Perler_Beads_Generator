@@ -21,7 +21,7 @@ require.extensions['.ts'] = compileTypeScript;
 
 const { almostSamePoint, linePoints, uniqueInBounds } = require('../src/services/domain/workspace/grid-geometry.ts');
 const { collectShapeIndices } = require('../src/services/domain/workspace/shape-rasterizer.ts');
-const { collectTextIndices } = require('../src/components/editor/Utils/text-rasterizer.ts');
+const { collectTextIndices } = require('../src/services/domain/workspace/text-rasterizer.ts');
 const { drawPattern } = require('../src/components/editor/Utils/canvas-renderer.ts');
 const { drawCellBoundarySet } = require('../src/components/editor/Utils/selection-renderer.ts');
 const { createProject } = require('../src/services/domain/project.ts');

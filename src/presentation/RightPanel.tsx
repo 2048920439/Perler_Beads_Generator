@@ -41,7 +41,6 @@ export function RightPanel() {
   }, [paletteGroup, paletteGroups]);
 
   function layerDisplayName(layer: BeadLayer, index: number): string { return editor.getLayerDisplayName(layer, index); }
-  function updateUsageLayerSelection(layerIds: Set<string>) { layerService.updateUsageSelection(layerIds); }
   function toggleUsageLayer(layerId: string) {
     layerService.toggleUsageLayer(layerId);
   }
@@ -252,14 +251,14 @@ export function RightPanel() {
             <button
               type="button"
               className={countedLayers.length === layers.length ? 'active' : ''}
-              onClick={() => updateUsageLayerSelection(new Set(layers.map((layer) => layer.id)))}
+              onClick={() => layerService.countAllLayers()}
             >
               {localization.text.countAllLayers}
             </button>
             <button
               type="button"
               className={countedLayers.length === 1 && countedLayers[0]?.id === activeLayer.id ? 'active' : ''}
-              onClick={() => updateUsageLayerSelection(new Set([activeLayer.id]))}
+              onClick={() => layerService.countActiveLayer()}
             >
               {localization.text.countCurrentLayer}
             </button>

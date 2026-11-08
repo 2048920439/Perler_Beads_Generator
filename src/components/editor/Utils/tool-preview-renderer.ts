@@ -10,7 +10,7 @@ import {
 } from '@/services/domain/workspace/cell-operations';
 import type { ColorResolver, PointerGridPoint } from './canvas-types';
 import { drawCellBoundarySet, drawCellSet, drawCopySelectionSet } from './selection-renderer';
-import { collectTextIndices } from './text-rasterizer';
+import { collectTextIndices } from '@/services/domain/workspace/text-rasterizer';
 
 export function drawBrushCursor(
   context: CanvasRenderingContext2D,

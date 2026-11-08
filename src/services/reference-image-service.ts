@@ -41,6 +41,9 @@ export class ReferenceImageService extends BaseService {
   }
 
   resetTransform(): void { this.update({ scale: 1, offset: { x: 0, y: 0 }, adjusting: false }); }
+  stepScale(direction: -1 | 1): void {
+    this.update({ scale: Math.min(3, Math.max(0.25, this.snapshot.scale * (direction < 0 ? 0.94 : 1.06))) });
+  }
   clear(): void {
     this.releaseUrl();
     this.state.next({ ...this.snapshot, file: null, url: null, visible: false, scale: 1, offset: { x: 0, y: 0 }, adjusting: false });

@@ -1,34 +1,17 @@
 import './di';
 import { container, type InjectionToken } from 'tsyringe';
-import { AdjustmentService } from '@/services/adjustment-service';
-import { CanvasEditService } from '@/services/canvas-edit-service';
-import { EditorService } from '@/services/editor-service';
-import { EditorQueryService } from '@/services/editor-query-service';
-import { ExportService } from '@/services/export-service';
-import { ImportService } from '@/services/import-service';
-import { LayerService } from '@/services/layer-service';
 import { LocalizationService } from '@/services/localization-service';
-import { NoticeService } from '@/services/notice-service';
-import { PaletteService } from '@/services/palette-service';
-import { ProjectService } from '@/services/project-service';
-import { ReferenceImageService } from '@/services/reference-image-service';
-import { ToolService } from '@/services/tool-service';
-import { WorkspaceService } from '@/services/workspace-service';
-import { WorkspaceViewService } from '@/services/workspace-view-service';
+import { serviceModules } from '@/services/service-modules';
 import { BaseService } from './base-service';
 import { isLanguage, type Language } from '@/config/localization';
 
-const serviceTypes = [
-  AdjustmentService, CanvasEditService, EditorService, EditorQueryService, ExportService,
-  ImportService, LayerService, LocalizationService, NoticeService, PaletteService,
-  ProjectService, ReferenceImageService, ToolService, WorkspaceService, WorkspaceViewService,
-];
 class RuntimeInjector {
   private readonly instances = new Set<BaseService>();
   private readonly localization: LocalizationService;
   private bound = false;
 
   constructor() {
+    const serviceTypes = serviceModules.flat();
     serviceTypes.forEach((token) => container.afterResolution<BaseService>(
       token,
       (_token, result) => {

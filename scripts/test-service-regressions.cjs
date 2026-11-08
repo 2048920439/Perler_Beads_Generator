@@ -842,6 +842,80 @@ test('canvas commands share the kernel, including shape, erase, fill, remove, pa
   assert.deepEqual(editor.activeLayer.cells.slice(3, 5), ['mard-h2', 'mard-h2']);
 });
 
+test('canvas pointer intents edit, copy, move, cancel and commit shape through the service', () => {
+  const { editor, project, injector } = editing();
+  const canvas = injector.resolve(CanvasEditService);
+  const tools = injector.resolve(ToolService);
+  const point = (x, y) => ({ cell: { x, y }, gridX: x + 0.5, gridY: y + 0.5 });
+  tools.setTool('pencil');
+  assert.equal(canvas.startPointer(point(0, 0), editor.project), 'draw');
+  canvas.movePointer(point(2, 0));
+  canvas.finishPointer();
+  assert.ok(editor.activeLayer.cells.slice(0, 3).every(Boolean));
+  assert.equal(project.snapshot.past.length, 2);
+  tools.setTool('copy');
+  tools.setCopyMode('selection');
+  assert.equal(canvas.startPointer(point(0, 0), editor.project), 'copy');
+  canvas.movePointer(point(2, 0));
+  canvas.finishPointer();
+  assert.deepEqual(tools.snapshot.copySelectionIndices, [0, 1, 2]);
+  tools.setTool('move');
+  assert.equal(canvas.startPointer(point(0, 0), editor.project), 'move');
+  canvas.movePointer(point(0, 1));
+  canvas.cancelGesture();
+  assert.ok(editor.activeLayer.cells.slice(0, 3).every(Boolean));
+  assert.ok(editor.activeLayer.cells.slice(8, 11).every((cell) => cell === null));
+  tools.setTool('shape');
+  assert.equal(canvas.startPointer(point(0, 1), editor.project), 'shape');
+  assert.deepEqual(canvas.movePointer(point(2, 1)).end, { x: 2, y: 1 });
+  canvas.finishPointer();
+  assert.ok(editor.activeLayer.cells.slice(8, 11).every(Boolean));
+  editor.undo();
+  assert.ok(editor.activeLayer.cells.slice(8, 11).every((cell) => cell === null));
+});
+
+test('query reuses project-derived data for palette and view changes and invalidates after edits', () => {
+  const { editor, injector } = editing();
+  const query = injector.resolve(EditorQueryService);
+  const palette = injector.resolve(require('../src/services/palette-service.ts').PaletteService);
+  const view = injector.resolve(require('../src/services/workspace-view-service.ts').WorkspaceViewService);
+  colorCells(editor, [0]);
+  const initial = query.snapshot;
+  palette.selectColor('mard-h2');
+  assert.strictEqual(query.snapshot.usage, initial.usage);
+  assert.strictEqual(query.snapshot.displayProject, initial.displayProject);
+  view.setShowIsolatedBeads(true);
+  const highlighted = query.snapshot.highlightedCellIndices;
+  assert.deepEqual(highlighted, [0]);
+  view.highlightColor('mard-h7');
+  assert.strictEqual(query.snapshot.highlightedCellIndices, highlighted);
+  editor.updateSettings({ showGrid: false });
+  assert.strictEqual(query.snapshot.usage, initial.usage);
+  assert.strictEqual(query.snapshot.highlightedCellIndices, highlighted);
+  editor.updateSettings({ beadsPerPack: 100 });
+  assert.notStrictEqual(query.snapshot.usage, initial.usage);
+  assert.strictEqual(query.snapshot.highlightedCellIndices, highlighted);
+  const beforeEdit = query.snapshot.usage;
+  colorCells(editor, [1]);
+  assert.notStrictEqual(query.snapshot.usage, beforeEdit);
+  assert.deepEqual(query.snapshot.highlightedCellIndices, []);
+});
+
+test('client entry disables SSR and singleton construction restores the draft before edits', () => {
+  const entry = fs.readFileSync(path.join(root, 'src/app/client-entry.tsx'), 'utf8');
+  assert.match(entry, /ssr:\s*false/);
+  const browser = browserStorage();
+  const draft = createProject(8, 8);
+  browser.values.set(autosaveKey, JSON.stringify(draft));
+  const injector = services();
+  const editor = injector.resolve(EditorService);
+  assert.equal(editor.project.width, 8);
+  colorCells(editor, [0]);
+  injector.unbind();
+  injector.bind('en');
+  assert.equal(editor.activeLayer.cells[0], 'mard-h7');
+});
+
 test('large-grid edits preserve untouched layer arrays and revision stays out of exported data', () => {
   const { editor } = editing();
   editor.createDocument(180, 180);
@@ -887,6 +961,9 @@ test('service dependency graph is acyclic, root binding follows dependencies and
       visit(ast);
     }
   }
+  const registered = require('../src/services/service-modules.ts').serviceModules.flat();
+  assert.equal(new Set(registered).size, registered.length, 'duplicate service registration');
+  assert.deepEqual(new Set(registered), new Set(types), 'all singleton services must be registered');
   const complete = new Set();
   function visit(name, stack = []) {
     assert.ok(!stack.includes(name), [...stack, name].join(' -> '));

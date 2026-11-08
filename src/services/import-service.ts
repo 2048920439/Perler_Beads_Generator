@@ -51,6 +51,11 @@ export class ImportService extends BaseService {
     return /^image\/(png|jpeg|jpg|webp)$/.test(file.type);
   }
 
+  openDroppedFiles(files: Iterable<File>): void {
+    const file = [...files].find((item) => item.type.startsWith('image/'));
+    if (file) this.openImage(file);
+  }
+
   openImage(file: File): void {
     if (!this.isSupportedImage(file)) {
       this.notice.show((text) => text.unsupportedImage);

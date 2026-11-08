@@ -34,6 +34,13 @@ export type EditorSnapshot = {
 
 @singleton()
 export class EditorQueryService extends BaseService {
+  private derivedProject: BeadProject | undefined;
+  private derived: {
+    displayProject: BeadProject;
+    usage: UsageRow[];
+    isolated: Array<{ layerId: string; index: number }>;
+    isolatedIndices: number[];
+  } | undefined;
   private readonly state = new BehaviorSubject<EditorSnapshot>(this.buildSnapshot());
   readonly snapshot$ = readonlyState(this.state);
 
@@ -90,11 +97,31 @@ export class EditorQueryService extends BaseService {
 
   private buildSnapshot(): EditorSnapshot {
     const project = this.projectService.snapshot.project;
-    const displayProject = getDisplayProject(project);
+    if (project !== this.derivedProject || !this.derived) {
+      const previous = this.derivedProject;
+      const sameCells = previous && previous.width === project.width && previous.height === project.height
+        && previous.layers.length === project.layers.length
+        && previous.layers.every((layer, index) => {
+          const next = project.layers[index];
+          return layer.id === next.id && layer.cells === next.cells && layer.includeInUsage === next.includeInUsage;
+        });
+      const isolated = sameCells && this.derived ? this.derived.isolated : findIsolatedBeads(project);
+      const isolatedIndices = sameCells && this.derived
+        ? this.derived.isolatedIndices : [...new Set(isolated.map((item) => item.index))];
+      const usage = sameCells && this.derived && previous.settings.beadsPerPack === project.settings.beadsPerPack
+        ? this.derived.usage : summarizeUsage(project);
+      this.derivedProject = project;
+      this.derived = {
+        displayProject: getDisplayProject(project),
+        usage,
+        isolated,
+        isolatedIndices,
+      };
+    }
+    const { displayProject, usage, isolated, isolatedIndices } = this.derived;
     const layers = project.layers?.length ? project.layers : createProject(project.width, project.height).layers;
     const activeLayer = layers.find((layer) => layer.id === project.activeLayerId) ?? layers[0];
     const countedLayers = layers.filter((layer) => layer.includeInUsage);
-    const usage = summarizeUsage(project);
     const paletteColors = this.paletteService.colors;
     const recentColors = this.paletteService.snapshot.recentColorIds.flatMap((id) => {
       const color = paletteColors.find((item) => item.id === id);
@@ -112,11 +139,11 @@ export class EditorQueryService extends BaseService {
       usage,
       totalBeads: usage.reduce((sum, row) => sum + row.count, 0),
       totalPacks: usage.reduce((sum, row) => sum + row.packs, 0),
-      isolatedBeads: findIsolatedBeads(project).length,
+      isolatedBeads: isolated.length,
       boardCount: Math.ceil(project.width / project.boardSettings.boardWidth)
         * Math.ceil(project.height / project.boardSettings.boardHeight),
       highlightedCellIndices: this.view.snapshot.showIsolatedBeads
-        ? [...new Set(findIsolatedBeads(project).map((item) => item.index))]
+        ? isolatedIndices
         : [],
       selectedColor: getColor(this.paletteService.snapshot.selectedColorId),
       recentColors,

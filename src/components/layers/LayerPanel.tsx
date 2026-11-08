@@ -46,9 +46,8 @@ export function LayerPanel() {
   const [dragTarget, setDragTarget] = useState<DragTarget | null>(null);
 
   function saveEditingLayer(layer: BeadLayer, index: number) {
-    const nextName = editingLayerName.trim();
     setEditingLayerId(null);
-    if (nextName) onSaveLayerName(layer, index, nextName);
+    onSaveLayerName(layer, index, editingLayerName);
   }
 
   return (
