@@ -3,9 +3,17 @@
 ## Project Snapshot
 
 - This is a browser-side Perler bead pattern editor built with Next.js App Router, React, TypeScript, Canvas 2D, and Three.js.
-- The Next.js entry points live in `src/app/`. The editor and domain logic live in `src/`.
 - Image processing and project data stay in the browser. Do not add uploads, analytics, or external services without an explicit product requirement.
 - The supported development and deployment path is the Next.js commands in `package.json` and `.github/workflows/`.
+
+## Repository Map
+
+- `src/app/(entry)/` owns the root route; `src/app/(localized)/[lang]/` owns localized routes. `src/app/client-app.tsx` mounts the client application and service provider.
+- `src/presentation/` composes the editor; `src/components/` contains feature UI and Canvas/Three.js rendering.
+- `src/services/` owns business state and orchestration; `src/services/domain/` contains domain rules and transformations.
+- `src/service-core/` provides dependency injection and the React subscription bridge. Shared types and UI are in `src/common/`.
+- `src/config/localization.tsx` and `src/i18n/dictionaries.ts` contain localization configuration and dictionaries.
+- `scripts/test-*.cjs` contains Node regression tests. See `docs/ARCHITECTURE.md` and `docs/RXJS_SERVICE_ARCHITECTURE.md` for architecture and service ownership.
 
 ## Working Rules
 
@@ -19,9 +27,15 @@
 - Do not add a dependency for a small utility that can be implemented safely with platform APIs already used by the project.
 - Do not reformat unrelated files or alter generated output, dependency lockfiles, or deployment settings unless the task requires it.
 
+## Service Boundaries
+
+- Services use `@singleton()` and constructor injection through the single runtime Injector, which resolves the graph on singleton construction. Do not create child containers or manually construct production services.
+- The root `ServiceProvider` only binds and unbinds service subscriptions/event handlers. Do not add separate service initialization or teardown calls.
+- Only `EditorService` may call `ProjectService` mutation methods. UI sends intents through feature services; public state streams must remain read-only.
+
 ## Verification
 
-Run the checks relevant to the change:
+Install dependencies with `pnpm install --frozen-lockfile` and start the development server with `pnpm dev`. Run the checks relevant to the change:
 
 ```bash
 pnpm test
@@ -31,10 +45,7 @@ pnpm build
 ```
 
 Node regression checks run through `pnpm test`. There is no permanent browser-test suite. For behavior changes, state what was manually checked and identify important untested paths; do not claim tests passed when only a build was run.
-
-- Services use `@singleton()` and constructor injection through the single runtime Injector, which resolves the graph on singleton construction. Do not create child containers or manually construct production services.
-- The root `ServiceProvider` only binds and unbinds service subscriptions/event handlers. Do not add separate service initialization or teardown calls.
-- Only `EditorService` may call `ProjectService` mutation methods. UI sends intents through feature services; public state streams must remain read-only.
+Use `pnpm build` followed by `pnpm preview` to inspect the exported static site locally.
 
 ## AI-Assisted Changes
 
